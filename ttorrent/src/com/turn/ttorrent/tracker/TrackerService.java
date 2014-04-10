@@ -35,6 +35,11 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.simpleframework.http.Request;
+import org.simpleframework.http.Response;
+import org.simpleframework.http.Status;
+import org.simpleframework.http.core.Container;
+
 
 
 /**
@@ -102,7 +107,7 @@ public class TrackerService implements Container {
 		// Reject non-announce requests
 		if (!Tracker.ANNOUNCE_URL.equals(request.getPath().toString())) {
 			response.setCode(404);
-			response.setText("Not Found");
+			//response.setText("Not Found");
 			return;
 		}
 
@@ -134,8 +139,8 @@ public class TrackerService implements Container {
 	private void process(Request request, Response response,
 			OutputStream body) throws IOException {
 		// Prepare the response headers.
-		response.set("Content-Type", "text/plain");
-		response.set("Server", this.version);
+		//response.set("Content-Type", "text/plain");
+		//response.set("Server", this.version);
 		response.setDate("Date", System.currentTimeMillis());
 
 		/**
@@ -308,7 +313,7 @@ public class TrackerService implements Container {
 	private void serveError(Response response, OutputStream body,
 		Status status, HTTPTrackerErrorMessage error) throws IOException {
 		response.setCode(status.getCode());
-		response.setText(status.getDescription());
+		//response.setText(status.getDescription());
 		logger.warn("Could not process announce request ({}) !",
 			error.getReason());
 

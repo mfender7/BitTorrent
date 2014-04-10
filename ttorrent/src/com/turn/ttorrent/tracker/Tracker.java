@@ -28,6 +28,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.simpleframework.transport.Server;
 import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
 import org.slf4j.Logger;
@@ -107,7 +108,7 @@ public class Tracker {
 
 		this.torrents = new ConcurrentHashMap<String, TrackedTorrent>();
 		this.connection = new SocketConnection(
-				new TrackerService(version, this.torrents));
+				(Server) new TrackerService(version, this.torrents));
 	}
 
 	/**

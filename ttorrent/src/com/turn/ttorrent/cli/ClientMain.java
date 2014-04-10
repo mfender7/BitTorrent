@@ -28,10 +28,10 @@ import java.net.UnknownHostException;
 import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.Enumeration;
 
-import jargs.gnu.CmdLineParser;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.PatternLayout;
+//import jargs.gnu.CmdLineParser;
+//import org.apache.log4j.BasicConfigurator;
+//import org.apache.log4j.ConsoleAppender;
+//import org.apache.log4j.PatternLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,8 +110,8 @@ public class ClientMain {
 	 * Main client entry point for stand-alone operation.
 	 */
 	public static void main(String[] args) {
-		BasicConfigurator.configure(new ConsoleAppender(
-			new PatternLayout("%d [%-25t] %-5p: %m%n")));
+//		BasicConfigurator.configure(new ConsoleAppender(
+//			new PatternLayout("%d [%-25t] %-5p: %m%n")));
 
 		//CmdLineParser parser = new CmdLineParser();
 		//CmdLineParser.Option help = parser.addBooleanOption('h', "help");
@@ -130,47 +130,52 @@ public class ClientMain {
 		//}
 
 		// Display help and exit if requested
-		if (Boolean.TRUE.equals((Boolean)parser.getOptionValue(help))) {
-			usage(System.out);
-			System.exit(0);
-		}
+//		if (Boolean.TRUE.equals((Boolean)parser.getOptionValue(help))) {
+//			usage(System.out);
+//			System.exit(0);
+//		}
+//
+//		String outputValue = (String)parser.getOptionValue(output,
+//			DEFAULT_OUTPUT_DIRECTORY);
+//		String ifaceValue = (String)parser.getOptionValue(iface);
+//		int seedTimeValue = (Integer)parser.getOptionValue(seedTime, -1);
+//
+//		double maxDownloadRate = (Double)parser.getOptionValue(maxDownload, 0.0);
+//		double maxUploadRate = (Double)parser.getOptionValue(maxUpload, 0.0);
+//
+//		String[] otherArgs = parser.getRemainingArgs();
+//		if (otherArgs.length != 1) {
+//			usage(System.err);
+//			System.exit(1);
+//		}
 
-		String outputValue = (String)parser.getOptionValue(output,
-			DEFAULT_OUTPUT_DIRECTORY);
-		String ifaceValue = (String)parser.getOptionValue(iface);
-		int seedTimeValue = (Integer)parser.getOptionValue(seedTime, -1);
-
-		double maxDownloadRate = (Double)parser.getOptionValue(maxDownload, 0.0);
-		double maxUploadRate = (Double)parser.getOptionValue(maxUpload, 0.0);
-
-		String[] otherArgs = parser.getRemainingArgs();
-		if (otherArgs.length != 1) {
-			usage(System.err);
-			System.exit(1);
-		}
-
-		try {
-			Client c = new Client(
-				getIPv4Address(ifaceValue),
-				SharedTorrent.fromFile(
-					new File(otherArgs[0]),
-					new File(outputValue)));
-
-			c.setMaxDownloadRate(maxDownloadRate);
-			c.setMaxUploadRate(maxUploadRate);
-
-			// Set a shutdown hook that will stop the sharing/seeding and send
-			// a STOPPED announce request.
-			Runtime.getRuntime().addShutdownHook(
-				new Thread(new Client.ClientShutdown(c, null)));
-
-			c.share(seedTimeValue);
-			if (Client.ClientState.ERROR.equals(c.getState())) {
-				System.exit(1);
-			}
-		} catch (Exception e) {
-			logger.error("Fatal error: {}", e.getMessage(), e);
-			System.exit(2);
-		}
+//		try {
+//			String ifaceValue = "", outputValue = "";
+//			String[] otherArgs;
+//			double maxDownloadRate = 0, maxUploadRate = 0;
+//			int seedTimeValue;
+//			
+//			Client c = new Client(
+//				getIPv4Address(ifaceValue),
+//				SharedTorrent.fromFile(
+//					new File(otherArgs[0]),
+//					new File(outputValue)));
+//
+//			c.setMaxDownloadRate(maxDownloadRate);
+//			c.setMaxUploadRate(maxUploadRate);
+//
+//			// Set a shutdown hook that will stop the sharing/seeding and send
+//			// a STOPPED announce request.
+//			Runtime.getRuntime().addShutdownHook(
+//				new Thread(new Client.ClientShutdown(c, null)));
+//
+//			c.share(seedTimeValue);
+//			if (Client.ClientState.ERROR.equals(c.getState())) {
+//				System.exit(1);
+//			}
+//		} catch (Exception e) {
+//			logger.error("Fatal error: {}", e.getMessage(), e);
+//			System.exit(2);
+//		}
 	}
 }

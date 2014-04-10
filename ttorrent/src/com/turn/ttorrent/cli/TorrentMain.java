@@ -24,11 +24,11 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.util.Arrays;
 
-import jargs.gnu.CmdLineParser;
+//import jargs.gnu.CmdLineParser;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.PatternLayout;
+//import org.apache.log4j.BasicConfigurator;
+//import org.apache.log4j.ConsoleAppender;
+//import org.apache.log4j.PatternLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,70 +97,70 @@ public class TorrentMain {
 //		}
 
 		// Display help and exit if requested
-		if (Boolean.TRUE.equals((Boolean)parser.getOptionValue(help))) {
-			usage(System.out);
-			System.exit(0);
-		}
+//		if (Boolean.TRUE.equals((Boolean)parser.getOptionValue(help))) {
+//			usage(System.out);
+//			System.exit(0);
+//		}
+//
+//		String filenameValue = (String)parser.getOptionValue(filename);
+//		if (filenameValue == null) {
+//			usage(System.err, "Torrent file must be provided!");
+//			System.exit(1);
+//		}
+//
+//		Boolean createFlag = (Boolean)parser.getOptionValue(create);
+//		String announceURL = (String)parser.getOptionValue(announce);
+//
+//		String[] otherArgs = parser.getRemainingArgs();
 
-		String filenameValue = (String)parser.getOptionValue(filename);
-		if (filenameValue == null) {
-			usage(System.err, "Torrent file must be provided!");
-			System.exit(1);
-		}
-
-		Boolean createFlag = (Boolean)parser.getOptionValue(create);
-		String announceURL = (String)parser.getOptionValue(announce);
-
-		String[] otherArgs = parser.getRemainingArgs();
-
-		if (Boolean.TRUE.equals(createFlag) &&
-			(otherArgs.length != 1 || announceURL == null)) {
-			usage(System.err, "Announce URL and a file or directory must be " +
-				"provided to create a torrent file!");
-			System.exit(1);
-		}
-
-		OutputStream fos = null;
-		try {
-			if (Boolean.TRUE.equals(createFlag)) {
-				if (filenameValue != null) {
-					fos = new FileOutputStream(filenameValue);
-				} else {
-					fos = System.out;
-				}
-
-				URI announceURI = new URI(announceURL);
-				File source = new File(otherArgs[0]);
-				if (!source.exists() || !source.canRead()) {
-					throw new IllegalArgumentException(
-						"Cannot access source file or directory " +
-							source.getName());
-				}
-
-				String creator = String.format("%s (ttorrent)",
-					System.getProperty("user.name"));
-
-				Torrent torrent = null;
-				if (source.isDirectory()) {
-					File[] files = source.listFiles();
-					Arrays.sort(files);
-					torrent = Torrent.create(source, Arrays.asList(files),
-						announceURI, creator);
-				} else {
-					torrent = Torrent.create(source, announceURI, creator);
-				}
-
-				torrent.save(fos);
-			} else {
-				Torrent.load(new File(filenameValue), true);
-			}
-		} catch (Exception e) {
-			logger.error("{}", e.getMessage(), e);
-			System.exit(2);
-		} finally {
-			if (fos != System.out) {
-				IOUtils.closeQuietly(fos);
-			}
-		}
+//		if (Boolean.TRUE.equals(createFlag) &&
+//			(otherArgs.length != 1 || announceURL == null)) {
+//			usage(System.err, "Announce URL and a file or directory must be " +
+//				"provided to create a torrent file!");
+//			System.exit(1);
+//		}
+//
+//		OutputStream fos = null;
+//		try {
+//			if (Boolean.TRUE.equals(createFlag)) {
+//				if (filenameValue != null) {
+//					fos = new FileOutputStream(filenameValue);
+//				} else {
+//					fos = System.out;
+//				}
+//
+//				URI announceURI = new URI(announceURL);
+//				File source = new File(otherArgs[0]);
+//				if (!source.exists() || !source.canRead()) {
+//					throw new IllegalArgumentException(
+//						"Cannot access source file or directory " +
+//							source.getName());
+//				}
+//
+//				String creator = String.format("%s (ttorrent)",
+//					System.getProperty("user.name"));
+//
+//				Torrent torrent = null;
+//				if (source.isDirectory()) {
+//					File[] files = source.listFiles();
+//					Arrays.sort(files);
+//					torrent = Torrent.create(source, Arrays.asList(files),
+//						announceURI, creator);
+//				} else {
+//					torrent = Torrent.create(source, announceURI, creator);
+//				}
+//
+//				torrent.save(fos);
+//			} else {
+//				Torrent.load(new File(filenameValue), true);
+//			}
+//		} catch (Exception e) {
+//			logger.error("{}", e.getMessage(), e);
+//			System.exit(2);
+//		} finally {
+//			if (fos != System.out) {
+//				IOUtils.closeQuietly(fos);
+//			}
+//		}
 	}
 }
