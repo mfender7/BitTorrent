@@ -27,16 +27,16 @@ import java.net.InetSocketAddress;
 //import org.apache.log4j.BasicConfigurator;
 //import org.apache.log4j.ConsoleAppender;
 //import org.apache.log4j.PatternLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 /**
  * Command-line entry-point for starting a {@link Tracker}
  */
 public class TrackerMain {
 
-	private static final Logger logger =
-		LoggerFactory.getLogger(TrackerMain.class);
+//	private static final Logger logger =
+//		LoggerFactory.getLogger(TrackerMain.class);
 
 	/**
 	 * Display program usage on the given {@link PrintStream}.

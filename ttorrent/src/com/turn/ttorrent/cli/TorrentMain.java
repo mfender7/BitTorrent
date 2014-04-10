@@ -29,23 +29,23 @@ import org.apache.commons.io.IOUtils;
 //import org.apache.log4j.BasicConfigurator;
 //import org.apache.log4j.ConsoleAppender;
 //import org.apache.log4j.PatternLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 /**
  * Command-line entry-point for reading and writing {@link Torrent} files.
  */
 public class TorrentMain {
 
-	private static final Logger logger =
-		LoggerFactory.getLogger(TorrentMain.class);
-
-	/**
-	 * Display program usage on the given {@link PrintStream}.
-	 */
-	private static void usage(PrintStream s) {
-		usage(s, null);
-	}
+//	private static final Logger logger =
+//		LoggerFactory.getLogger(TorrentMain.class);
+//
+//	/**
+//	 * Display program usage on the given {@link PrintStream}.
+//	 */
+//	private static void usage(PrintStream s) {
+//		usage(s, null);
+//	}
 
 	/**
 	 * Display a message and program usage on the given {@link PrintStream}.
@@ -79,6 +79,8 @@ public class TorrentMain {
 	 * TODO: support multiple announce URLs.
 	 */
 	public static void main(String[] args) {
+		System.out.println("Weeeee");
+		System.out.println("Some actual test will be run here. Just not yet.");
 //		BasicConfigurator.configure(new ConsoleAppender(
 //			new PatternLayout("%-5p: %m%n")));
 

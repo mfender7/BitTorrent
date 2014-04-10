@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ClientMain {
 
-	private static final Logger logger =
-		LoggerFactory.getLogger(ClientMain.class);
+//	private static final Logger logger =
+//		LoggerFactory.getLogger(ClientMain.class);
 
 	/**
 	 * Default data output directory.
