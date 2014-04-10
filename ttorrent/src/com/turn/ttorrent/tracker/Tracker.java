@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Timer;
@@ -31,8 +32,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.simpleframework.transport.Server;
 import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 
 /**
  * BitTorrent tracker.
@@ -47,8 +48,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Tracker {
 
-	private static final Logger logger =
-		LoggerFactory.getLogger(Tracker.class);
+//	private static final Logger logger =
+//		LoggerFactory.getLogger(Tracker.class);
 
 	/** Request path handled by the tracker announce request handler. */
 	public static final String ANNOUNCE_URL = "/announce";
@@ -125,7 +126,7 @@ public class Tracker {
 				this.address.getPort(),
 				Tracker.ANNOUNCE_URL);
 		} catch (MalformedURLException mue) {
-			logger.error("Could not build tracker URL: {}!", mue, mue);
+			System.out.println(String.format("Could not build tracker URL: {}!", mue, mue));
 		}
 
 		return null;
@@ -161,14 +162,14 @@ public class Tracker {
 
 		try {
 			this.connection.close();
-			logger.info("BitTorrent tracker closed.");
+			System.out.println(String.format("BitTorrent tracker closed."));
 		} catch (IOException ioe) {
-			logger.error("Could not stop the tracker: {}!", ioe.getMessage());
+			System.out.println(String.format("Could not stop the tracker: {}!", ioe.getMessage()));
 		}
 
 		if (this.collector != null && this.collector.isAlive()) {
 			this.collector.interrupt();
-			logger.info("Peer collection terminated.");
+			System.out.println(String.format("Peer collection terminated."));
 		}
 	}
 
@@ -198,14 +199,14 @@ public class Tracker {
 		TrackedTorrent existing = this.torrents.get(torrent.getHexInfoHash());
 
 		if (existing != null) {
-			logger.warn("Tracker already announced torrent for '{}' " +
-				"with hash {}.", existing.getName(), existing.getHexInfoHash());
+			System.out.println(String.format("Tracker already announced torrent for '{}' " +
+				"with hash {}.", existing.getName(), existing.getHexInfoHash()));
 			return existing;
 		}
 
 		this.torrents.put(torrent.getHexInfoHash(), torrent);
-		logger.info("Registered new torrent for '{}' with hash {}.",
-			torrent.getName(), torrent.getHexInfoHash());
+		System.out.println(String.format("Registered new torrent for '{}' with hash {}.",
+			torrent.getName(), torrent.getHexInfoHash()));
 		return torrent;
 	}
 
@@ -274,13 +275,13 @@ public class Tracker {
 
 		@Override
 		public void run() {
-			logger.info("Starting BitTorrent tracker on {}...",
-				getAnnounceUrl());
+			System.out.println(String.format("Starting BitTorrent tracker on {}...",
+				getAnnounceUrl()));
 
 			try {
 				connection.connect(address);
 			} catch (IOException ioe) {
-				logger.error("Could not start the tracker: {}!", ioe.getMessage());
+				System.out.println(String.format("Could not start the tracker: {}!", ioe.getMessage()));
 				Tracker.this.stop();
 			}
 		}
@@ -300,8 +301,8 @@ public class Tracker {
 
 		@Override
 		public void run() {
-			logger.info("Starting tracker peer collection for tracker at {}...",
-				getAnnounceUrl());
+			System.out.println(String.format("Starting tracker peer collection for tracker at {}...",
+				getAnnounceUrl()));
 
 			while (!stop) {
 				for (TrackedTorrent torrent : torrents.values()) {
