@@ -72,8 +72,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Torrent {
 
-	private static final Logger logger =
-		LoggerFactory.getLogger(Torrent.class);
+//	private static final Logger logger =
+//		LoggerFactory.getLogger(Torrent.class);
 
 	/** Torrent file piece length (in bytes), we use 512 kB. */
 	private static final int PIECE_LENGTH = 512 * 1024;
@@ -239,48 +239,47 @@ public class Torrent {
 		}
 		this.size = size;
 
-		logger.info("{}-file torrent information:",
-			this.isMultifile() ? "Multi" : "Single");
-		logger.info("  Torrent name: {}", this.name);
-		logger.info("  Announced at:" + (this.trackers.size() == 0 ? " Seems to be trackerless" : ""));
+		System.out.println(String.format("%s-file torrent information:",
+			this.isMultifile() ? "Multi" : "Single"));
+		System.out.println(String.format("  Torrent name: %s", this.name));
+		System.out.println(String.format("  Announced at:" + (this.trackers.size() == 0 ? " Seems to be trackerless" : "")));
 		for (int i=0; i < this.trackers.size(); i++) {
 			List<URI> tier = this.trackers.get(i);
 			for (int j=0; j < tier.size(); j++) {
-				logger.info("    {}{}",
+				System.out.println(String.format("    %s%s",
 					(j == 0 ? String.format("%2d. ", i+1) : "    "),
-					tier.get(j));
+					tier.get(j)));
 			}
 		}
 
 		if (this.creationDate != null) {
-			logger.info("  Created on..: {}", this.creationDate);
+			System.out.println(String.format("  Created on..: %s", this.creationDate));
 		}
 		if (this.comment != null) {
-			logger.info("  Comment.....: {}", this.comment);
+			System.out.println(String.format("  Comment.....: %s", this.comment));
 		}
 		if (this.createdBy != null) {
-			logger.info("  Created by..: {}", this.createdBy);
+			System.out.println(String.format("  Created by..: %s", this.createdBy));
 		}
 
 		if (this.isMultifile()) {
-			logger.info("  Found {} file(s) in multi-file torrent structure.",
-				this.files.size());
+			System.out.println(String.format("  Found %d file(s) in multi-file torrent structure.",
+				this.files.size()));
 			int i = 0;
 			for (TorrentFile file : this.files) {
-				logger.debug("    {}. {} ({} byte(s))",
+				System.out.println(String.format("    %s. %s (%s byte(s))",
 					new Object[] {
 						String.format("%2d", ++i),
 						file.file.getPath(),
 						String.format("%,d", file.size)
-					});
+					}));
 			}
 		}
 
-		logger.info("  Pieces......: {} piece(s) ({} byte(s)/piece)",
+		System.out.println(String.format("  Pieces......: %d piece(s) (%d byte(s)/piece)",
 			(this.size / this.decoded_info.get("piece length").getInt()) + 1,
-			this.decoded_info.get("piece length").getInt());
-		logger.info("  Total size..: {} byte(s)",
-			String.format("%,d", this.size));
+			this.decoded_info.get("piece length").getInt()));
+		System.out.println(String.format("  Total size..: %d byte(s)", this.size));
 	}
 
 	/**
@@ -601,11 +600,11 @@ public class Torrent {
 			List<List<URI>> announceList, String createdBy)
 			throws InterruptedException, IOException {
 		if (files == null || files.isEmpty()) {
-			logger.info("Creating single-file torrent for {}...",
-				parent.getName());
+			System.out.println(String.format("Creating single-file torrent for {}...",
+				parent.getName()));
 		} else {
-			logger.info("Creating {}-file torrent {}...",
-				files.size(), parent.getName());
+			System.out.println(String.format("Creating {}-file torrent {}...",
+				files.size(), parent.getName()));
 		}
 
 		Map<String, BEValue> torrent = new HashMap<String, BEValue>();
@@ -727,13 +726,13 @@ public class Torrent {
 
 		long start = System.nanoTime();
 		for (File file : files) {
-			logger.info("Hashing data from {} with {} threads ({} pieces)...",
+			System.out.println(String.format("Hashing data from {} with {} threads ({} pieces)...",
 				new Object[] {
 					file.getName(),
 					threads,
 					(int) (Math.ceil(
 						(double)file.length() / Torrent.PIECE_LENGTH))
-				});
+				}));
 
 			length += file.length();
 
@@ -753,7 +752,7 @@ public class Torrent {
 					}
 
 					if (channel.position() / (double)channel.size() * 100f > step) {
-						logger.info("  ... {}% complete", step);
+						System.out.println(String.format("  ... {}% complete", step));
 						step += 10;
 					}
 				}
@@ -782,14 +781,14 @@ public class Torrent {
 
 		int expectedPieces = (int) (Math.ceil(
 				(double)length / Torrent.PIECE_LENGTH));
-		logger.info("Hashed {} file(s) ({} bytes) in {} pieces ({} expected) in {}ms.",
+		System.out.println(String.format("Hashed {} file(s) ({} bytes) in {} pieces ({} expected) in {}ms.",
 			new Object[] {
 				files.size(),
 				length,
 				pieces,
 				expectedPieces,
 				String.format("%.1f", elapsed/1e6),
-			});
+			}));
 
 		return hashes.toString();
 	}
