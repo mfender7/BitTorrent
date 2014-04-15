@@ -37,7 +37,7 @@ public class App {
 		System.out.println(id);
 		Torrent torrent = null;
 		try{			
-			torrent = Torrent.load(new File("BitTorrent/dsl-4.4.10.iso.torrent"));
+			torrent = Torrent.load(new File("dsl-4.4.10.iso.torrent"));
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0).get(0), torrent);
 			System.out.println(announce);
