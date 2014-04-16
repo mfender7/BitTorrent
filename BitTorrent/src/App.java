@@ -1,4 +1,5 @@
 import com.turn.ttorrent.common.Torrent;
+import com.turn.ttorrent.bcodec.*;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -7,10 +8,12 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.*;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 public class App {
 	private static final String HTTP_ENCODING = "ISO-8859-1";
@@ -25,9 +28,9 @@ public class App {
 			url.append(base.contains("?") ? "&" : "?");
 			url.append("info_hash=");
 			url.append(URLEncoder.encode(new String(torrent.getInfoHash(), HTTP_ENCODING), HTTP_ENCODING)).append("&peer_id=");
-			url.append(URLEncoder.encode(client.getID(), HTTP_ENCODING));
+			url.append(URLEncoder.encode(new String(client.getID().getBytes(), HTTP_ENCODING), HTTP_ENCODING));
 			url.append("&port=");
-			url.append(53553);
+			url.append(51413);
 			return new URL(url.toString());
 			
 			
@@ -39,7 +42,9 @@ public class App {
 	
 	public static void main(String[] args){
 		System.out.println("Go go go!");
-		String id = "-MT0001-" + UUID.randomUUID()
+		//-TO0042-
+		//-MT001-
+		String id = "-TO0042-" + UUID.randomUUID()
 				.toString().split("-")[4];
 		System.out.println(id);
 		Torrent torrent = null;
@@ -52,16 +57,22 @@ public class App {
 			URLConnection connection = announce.openConnection();
 			//String charset = "UTF-8";
 			//connection.setRequestProperty("Accept-Charset", charset);
-			InputStream response = connection.getInputStream();
+			InputStream in = connection.getInputStream();
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			baos.write(in);
+			ByteBuffer response = ByteBuffer.wrap(baos.toByteArray());
+			BEValue decoded = BDecoder.bdecode(response);
+			Map<String, BEValue> params = decoded.getMap();
+			if(params.containsKey("peers"))
+				System.out.println("Hurray! Peers! We're somewhere!");
+			else if (params.containsKey("info_hash"))
+				System.out.println("Info hash maybe?");
+			else
+				System.out.println("Shit");
 			
-			//int status = connection.getResponseCode();
-			//System.out.println(status);
-		for (Entry<String, List<String>> header : connection.getHeaderFields().entrySet()) {
-			    System.out.println(header.getKey() + "=" + header.getValue());
-			}
 			String encoding = connection.getContentEncoding();
 			encoding = encoding == null ? "UTF-8" : encoding;
-			String body = IOUtils.toString(response, HTTP_ENCODING);
+			String body = IOUtils.toString(in, HTTP_ENCODING);
 			System.out.println(body);
 		}
 		catch (Exception ex){
