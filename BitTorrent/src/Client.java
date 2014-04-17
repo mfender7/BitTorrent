@@ -26,7 +26,8 @@ public class Client {
 		this.torrent = torrent;
 		//this.state = ClientState.WAITING;
 
-		id = "-MT0001-" + "6c4c5dbb6ce2"; //<--make random later
+		id = "-MT0001-" + UUID.randomUUID()
+				.toString().split("-")[4];; //<--make random later
 
 		// Initialize the incoming connection handler and register ourselves to
 		// it.
