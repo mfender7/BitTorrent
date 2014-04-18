@@ -1,9 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import com.turn.ttorrent.common.Torrent;
 
 /*import com.turn.ttorrent.client.ConnectionHandler;
@@ -27,7 +25,7 @@ public class Client {
 		//this.state = ClientState.WAITING;
 
 		id = "-MT0001-" + UUID.randomUUID()
-				.toString().split("-")[4];; //<--make random later
+				.toString().split("-")[4];
 
 		// Initialize the incoming connection handler and register ourselves to
 		// it.
@@ -59,7 +57,15 @@ public class Client {
 		this.random = new Random(System.currentTimeMillis());*/
 	}
 	
+	public void run(){
+		this.service.start();
+	}
+	
 	public String getID(){
 		return this.id;
+	}
+	
+	public ConnectionListener getService(){
+		return this.service;
 	}
 }

@@ -5,15 +5,10 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.IOUtils;
 
 //import com.turn.ttorrent.client.ConnectionHandler;
 //import com.turn.ttorrent.client.IncomingConnectionListener;
@@ -25,52 +20,45 @@ public class ConnectionListener implements Runnable {
 	private InetSocketAddress address;
 	private String id;
 	private ServerSocketChannel channel;
+	private ServerSocket ssocket;
 	private boolean stop;
+	private int port;
 	
 	private ExecutorService executor;
 	private Thread thread;
 	
 	
-	ConnectionListener(Torrent torrent, String id, InetAddress address){
+	ConnectionListener(Torrent torrent, String id, InetAddress address) throws IOException{
 		this.torrent = torrent;
 		this.id=id;
+		this.ssocket = new ServerSocket();
 		
 		for (int port = 6881; port <= 6889; port++) {
 			InetSocketAddress tryAddress =
 				new InetSocketAddress(address, port);
 
 			try {
-				this.channel = ServerSocketChannel.open();
-				this.channel.socket().bind(tryAddress);
-				this.channel.configureBlocking(false);
+				this.ssocket.bind(tryAddress);
 				this.address = tryAddress;
+				this.port=port;
 				break;
 			} catch (IOException ioe) {
 				System.out.println("Could not bind to "+port+" trying next one");
 			}
 		}
 
-		/*if (this.channel == null || !this.channel.socket().isBound()) {
-			throw new IOException("No available port for the BitTorrent client!");
-		}*/
-
 		System.out.println("Listening for incoming connections on something.");
 		
 	}
 
 	public void start() {
-		if (this.channel == null) {
-			throw new IllegalStateException(
-				"Connection handler cannot be recycled!");
+		if (!this.ssocket.isBound()) {
+            throw new IllegalStateException("Can't start ConnectionHandler " +
+                            "without a bound socket!");
 		}
 
 		this.stop = false;
-
-		if (this.executor == null || this.executor.isShutdown()) {
-			this.executor = new ThreadPoolExecutor(
-				20, 20, 10, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>());
-		}
+		System.out.println("ConnectionListener started");
 
 		if (this.thread == null || !this.thread.isAlive()) {
 			this.thread = new Thread(this);
@@ -81,70 +69,158 @@ public class ConnectionListener implements Runnable {
 
 	@Override
 	public void run() {
-		while (!this.stop) {
-			try {
-				SocketChannel client = this.channel.accept();
-				if (client != null) {
-					this.performHandshake(client);
-				}
-			} catch (SocketTimeoutException ste) {
-				// Ignore and go back to sleep
-			} catch (IOException ioe) {
-				System.out.println("error in connection");
-				this.stop();
-			}
+		 try {
+             this.ssocket.setSoTimeout(250);
+		 } catch (SocketException se) {
+             //logger.warn("{}", se);
+             this.stop();
+		 }
 
-			/*try {
-				Thread.sleep(100);
-			} catch (InterruptedException ie) {
-				Thread.currentThread().interrupt();
-			}*/
-		}
+		 while (!this.stop) {
+             try {
+                 this.accept();
+             } catch (SocketTimeoutException ste) {
+                     // Ignore and go back to sleep
+             } catch (IOException ioe) {
+                     //logger.warn("{}", ioe);
+                     this.stop();
+             }
+
+             try {
+                     Thread.sleep(750);
+             } catch (InterruptedException ie) {
+                     // Ignore
+             }
+		 }
+
+		 try {
+             this.ssocket.close();
+		 } catch (IOException ioe) {
+             // Ignore
+		 }
 	}
 	
-	private void performHandshake(SocketChannel client)
-		throws IOException, SocketTimeoutException {
-		System.out.println("new connection, waiting for handshake");
-		try {
-			Handshake handshake = getHandshake(client, null);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		sendHandshake(client);
+	private void accept() throws IOException, SocketTimeoutException {
+        Socket socket = this.ssocket.accept();
+
+        try {
+                //logger.debug("New incoming connection ...");
+                Handshake hs = this.getHandshake(socket, null);
+                this.sendHandshake(socket);
+                //this.fireNewPeerConnection(socket, hs.getPeerId());
+        } catch (ParseException pe) {
+                System.out.println(pe.getMessage());
+                try { socket.close(); } catch (IOException e) { }
+        } catch (IOException ioe) {
+                System.out.println(ioe.getMessage());
+                try {
+                        if (!socket.isClosed()) {
+                                socket.close();
+                        }
+                } catch (IOException e) {
+                        // Ignore
+                }
+        }
 	}
+
 	
 	public void stop() { //copied
 		this.stop = true;
 
-		/*if (this.thread != null && this.thread.isAlive()) {
-			try {
-				this.thread.join();
-			} catch (InterruptedException ie) {
-				Thread.currentThread().interrupt();
-			}
-		}
+        if (this.thread != null && this.thread.isAlive()) {
+                this.thread.interrupt();
+        }
 
-		if (this.executor != null && !this.executor.isShutdown()) {
-			this.executor.shutdownNow();
-		}
-
-		this.executor = null;
-		this.thread = null;*/
+        this.thread = null;
+	}
+	
+	public int getPort() {
+		return this.port;
 	}
 	
 	public InetSocketAddress getAddress() {
 		return this.address;
 	}
 	
-	public Handshake getHandshake(SocketChannel channel, byte[] peerId) throws IOException, ParseException{
-		ByteBuffer hs = ByteBuffer.allocate(Handshake.LENGTH); //byte size of handshake
-		channel.read(hs);
-		return Handshake.parse(hs);
-	}
+
+	private Handshake getHandshake(Socket socket, byte[] peerId)
+			throws IOException, ParseException {
+		// Read the handshake from the wire
+		System.out.println("in getHandshake");
+		InputStream input = socket.getInputStream();
+		System.out.println("here1");
+        int pstrlen = input.read();
+        System.out.println("here2");
+        byte[] data = new byte[Handshake.LENGTH];
+        System.out.println("here3");
+        data[0] = (byte)pstrlen;
+        System.out.println("here4");
+        input.read(data, 1, data.length-1);
+        System.out.println("here5");
+
+        // Parse and check the handshake
+        Handshake hs = Handshake.parse(ByteBuffer.wrap(data));
+        System.out.println("here6");
+        if (!Arrays.equals(hs.getInfoHash(), this.torrent.getInfoHash())) {
+                /*throw new ParseException("Handshake for unknow torrent " +
+                                Torrent.byteArrayToHexString(hs.getInfoHash()) +
+                                " from " + this.socketRepr(socket) + ".", pstrlen + 9);*/
+        }
+
+        if (peerId != null && !Arrays.equals(hs.getPeerId(), peerId)) {
+                throw new ParseException("Announced peer ID " +
+                                Torrent.byteArrayToHexString(hs.getPeerId()) +
+                                " did not match expected peer ID " +
+                                Torrent.byteArrayToHexString(peerId) + ".", pstrlen + 29);
+        }
+
+        return hs;
+        
+		}
 	
-	private int sendHandshake(SocketChannel channel) throws IOException {
+	private void sendHandshake(Socket socket) throws IOException {
+		System.out.println("in sendHandshake");
 		Handshake hs = Handshake.make(this.torrent.getInfoHash(), 
 				this.id.getBytes(Torrent.BYTE_ENCODING));
-		return channel.write(hs.getDataBytes());
+		OutputStream os = socket.getOutputStream();
+        os.write(hs.getDataBytes(), 0, hs.getDataBytes().length);
+	}
+	
+	public boolean connect(Peer peer) {
+		Socket socket = new Socket();
+        InetSocketAddress address = peer.getInetSocketAddress();
+
+        try {
+                socket.connect(address, 3000);
+        } catch (IOException ioe) {
+                // Could not connect to peer, abort
+        	System.out.println("could not connect to peer");
+                //logger.warn("Could not connect to {}: {}", peer, ioe.getMessage());
+                return false;
+        }
+
+        try {
+                sendHandshake(socket);
+                Handshake hs = getHandshake(socket,
+                                (peer.hasPeerId() ? peer.getPeerId().array() : null));
+                //this.fireNewPeerConnection(socket, hs.getPeerId());
+                return true;
+        } catch (ParseException pe) {
+                //logger.debug("Invalid handshake from {}: {}",
+                        //this.socketRepr(socket), pe.getMessage());
+                try { socket.close(); } catch (IOException e) { }
+        } catch (IOException ioe) {
+                //logger.debug("An error occurred while reading an incoming " +
+                               // "handshake: {}", ioe.getMessage());
+                try {
+                        if (!socket.isClosed()) {
+                                socket.close();
+                        }
+                } catch (IOException e) {
+                        // Ignore
+                }
+        }
+
+        return false;
 	}
 }

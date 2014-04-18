@@ -19,11 +19,12 @@ public class Handshake {
 		this.infoHash = infoHash;
 		this.peerId = peerId;
 		this.dataBytes = dataBytes;
+		this.dataBytes.rewind();
 	}
 	
-	public ByteBuffer getDataBytes() {
-		return this.dataBytes;
-	}
+	public byte[] getDataBytes() {
+        return this.dataBytes.array();
+}
 
 	public byte[] getInfoHash() {
 		return this.infoHash.array();
@@ -36,35 +37,40 @@ public class Handshake {
 	public static Handshake parse(ByteBuffer buffer)
 		throws ParseException, UnsupportedEncodingException {
 		
-		byte[] nameLength = new byte[1];
-		buffer.get(nameLength);
-		//check if nameLength==19?
+		int protocolStrLen = Byte.valueOf(buffer.get()).intValue();
+        if (protocolStrLen < 0 ||
+                        buffer.remaining() != 67) {
+                throw new ParseException("Incorrect handshake message length " +
+                           "(protocolStrLen=" + protocolStrLen + ") !", 0);
+        }
 
-		// Check the protocol name
-		byte[] protocolName = new byte[NAME_LENGTH];
-		buffer.get(protocolName);
+        // Check the protocol identification string
+        byte[] pstr = new byte[protocolStrLen];
+        buffer.get(pstr);
 
-		if (!Handshake.PROTOCOL_NAME.equals(new String(protocolName, Torrent.BYTE_ENCODING))) {
-			throw new ParseException("Invalid protocol identifier!", 1);
-		}
+        if (!Handshake.PROTOCOL_NAME.equals(
+                                new String(pstr, Torrent.BYTE_ENCODING))) {
+                throw new ParseException("Invalid protocol identifier!", 1);
+        }
 
-		// Ignore reserved bytes
-		byte[] reserved = new byte[8];
-		buffer.get(reserved);
+        // Ignore reserved bytes
+        byte[] reserved = new byte[8];
+        buffer.get(reserved);
 
-		byte[] infoHash = new byte[20];
-		buffer.get(infoHash);
-		byte[] peerId = new byte[20];
-		buffer.get(peerId);
-		return new Handshake(ByteBuffer.wrap(infoHash),
-				ByteBuffer.wrap(peerId), buffer);
+        byte[] infoHash = new byte[20];
+        buffer.get(infoHash);
+        byte[] peerId = new byte[20];
+        buffer.get(peerId);
+        return new Handshake(ByteBuffer.wrap(infoHash),
+                        ByteBuffer.wrap(peerId), buffer);
+        
 	}
 
-	public static Handshake craft(byte[] torrentInfoHash,
+	public static Handshake make(byte[] torrentInfoHash,
 			byte[] clientPeerId) {
 		try {
 			ByteBuffer buffer = ByteBuffer.allocate(
-					Handshake.LENGTH + NAME_LENGTH); //fix later
+					Handshake.LENGTH); //fix later
 
 			byte[] reserved = new byte[8];
 			ByteBuffer infoHash = ByteBuffer.wrap(torrentInfoHash);
@@ -82,11 +88,7 @@ public class Handshake {
 			return null;
 		}
 	}
-	
-	public static Handshake make(byte[] torrentInfoHash,
-			byte[] clientPeerId){
-				return null;
-		
 
-	}
+
+	
 }
