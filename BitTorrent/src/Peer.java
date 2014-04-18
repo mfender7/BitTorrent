@@ -14,6 +14,8 @@ public class Peer {
 	private String hexPeerId;
 	private String ip;
 	private int port;
+	private boolean interested;
+	private boolean choked;
 
 
 	public Peer(String ip, int port, ByteBuffer peerId) {
