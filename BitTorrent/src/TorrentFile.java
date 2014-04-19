@@ -1,34 +1,68 @@
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 
 import com.turn.ttorrent.common.Torrent;
 
 public class TorrentFile {
 	
-	private long size;
+	private long fileSize;
 	private long offset;
 	private int pieces;
-	private double fileLength;
+	private int pieceLength;
 	private RandomAccessFile raf;
 	private FileChannel channel;
 	private Torrent torrent;
 	private File torrentFile;
+	private Map<Integer, TorrentFilePart> torrentParts;
+	private Peer peer;
 	
 	public TorrentFile(Torrent torrent) throws IOException {
 		this.torrent = torrent;
+		this.pieceLength = torrent.getDecodedInfo().get("piece length").getInt();
+		//torrent.
 		this.raf = new RandomAccessFile(new File(torrent.getName()), "rw");
 		this.channel = raf.getChannel();
-		this.size = torrent.getSize();
+		this.fileSize = torrent.getSize();
 		this.offset = 0L;
-		this.pieces = (int)Math.ceil((double)this.size / this.fileLength);
+		this.pieces = (int)Math.ceil((double)this.fileSize / this.pieceLength) + 1;
+		this.peer = peer;
 	}
 	
+	public int getPieces(){
+		return pieces;
+	}
 	
+	public void downloadPiece(int piece, Peer p) throws IOException{
+		//Start off at offset 0 for any piece.
+		TorrentFilePart part = new TorrentFilePart(ByteBuffer.wrap(new byte[pieceLength]), 0);
+		//Connect to the peer again since it worked the last time.
+		Socket socket = new Socket();
+		socket.connect(p.getInetSocketAddress(), 3000);
+		//and nooooow we start pulling all the things...
+		boolean finished = false;
+		while(!finished){
+			
+		}
+		
+	}
 	
-	
+	private static class TorrentFilePart{
+		
+		public static final int REQUEST_SIZE = 16384;
+		
+		private ByteBuffer piece;
+		private long offset;
+		
+		public TorrentFilePart(ByteBuffer piece, long offset){
+			this.piece = piece;
+			this.offset = offset;
+		}
+	}
 	
 	private static class PeerMessage{
 		

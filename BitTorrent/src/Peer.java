@@ -23,6 +23,7 @@ public class Peer {
 		this.hostId = String.format("%s:%d",
 				this.address.getAddress(),
 				this.address.getPort());  // ?
+		this.port = port;
 		
 		this.peerId = peerId;
 		this.hexPeerId = Torrent.byteArrayToHexString(peerId.array()); // ?
@@ -47,7 +48,7 @@ public class Peer {
 	public ByteBuffer getPeerId() {
 		return this.peerId;
 	}
-
+	
 	/*public String toString() {
 		StringBuilder s = new StringBuilder("peer://")
 			.append(this.getIp()).append(":").append(this.getPort())

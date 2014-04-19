@@ -31,12 +31,13 @@ public class App {
 		try {
 			url.append(base.contains("?") ? "&" : "?");
 			url.append("info_hash=");
-			url.append(URLEncoder.encode(new String(torrent.getInfoHash(), HTTP_ENCODING), HTTP_ENCODING)).append("&peer_id=");
-			url.append(URLEncoder.encode(new String(client.getID().getBytes(), HTTP_ENCODING), HTTP_ENCODING));
+			url.append(URLEncoder.encode(new String(torrent.getInfoHash(), HTTP_ENCODING), HTTP_ENCODING));
+			url.append("&peer_id=").append(URLEncoder.encode(new String(client.getID().getBytes(), HTTP_ENCODING), HTTP_ENCODING));
 			url.append("&port=").append(client.getService().getPort());
-			url.append("&downloaded=0").append("&uploaded=0").append("&left=339006116");
+			url.append("&downloaded=0");
+			url.append("&uploaded=0");
+			url.append("&left=339006116");
 			url.append("&compact=").append(1);
-			//url.append("&no_peer_id=").append(0);
 			return new URL(url.toString());
 			
 			
@@ -70,6 +71,24 @@ public class App {
 		}
 
 	
+	/*
+	 * PSUEDO CODE - as I need some damn clarity to myself for this last part
+	 * ~~~~~~~
+	 * load torrent file
+	 * parse/grab torrent.metadata
+	 * build torrent.metadata.annoucelist to the tracker
+	 * grab list of peers from tracker for this torrent file
+	 * create torrentfile.part
+	 * loop {
+	 * 	pick piece to download
+	 * 	handshake with peer
+	 * 	trade data
+	 * 	verfiy part is done
+	 * 	piece++
+	 * }
+	 */
+	
+	
 	public static void main(String[] args){
 		System.out.println("Go go go!");
 
@@ -92,15 +111,39 @@ public class App {
 			BEValue decoded = BDecoder.bdecode(response);
 			Map<String, BEValue> params = decoded.getMap();
 			if(params.containsKey("peers")){
-				System.out.println("Hurray! Peers! We're somewhere!");
-				//BEValue decoded2 = BDecoder.bdecode(response);
 				List<Peer> peers = toPeerList(params.get("peers").getBytes());
-				//for(Peer peer : peers)
-					//System.out.println(peer.toString());
+				TorrentFile file = new TorrentFile(torrent);
+				int piece = 0;
+				while(piece < file.getPieces()){
+					for(int i = 0; i < peers.size(); i++){
+						try{
+							System.out.println("Peer number index " + i);
+							Peer p = peers.get(i);
+							Peer peer = client.getService().connect(p);
+							if(peer != null) { //then we can do stuffs	
+								
+								piece += 1;
+							}
+							else
+								System.out.println(String.format("Peer[%d] - %s \ndidn't work. *sigh*", i, p.toString()));
+						} catch (Exception ex){
+							System.out.println("Peer index " + i);
+							System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
+						}
+					}
+				
+				}
 				
 				Peer p = peers.get(0);
-				System.out.println(p.toString());
-				client.getService().connect(p);
+				Peer connected = client.getService().connect(p);
+				
+				if(connected != null){
+					System.out.println("ID! " + connected.getPeerId().array());
+					
+				}
+				else{
+					System.out.println("Something didn't come back like we wanted it to...");
+				}
 			}
 			else if (params.containsKey("info_hash"))
 				System.out.println("Info hash maybe?");
@@ -108,6 +151,8 @@ public class App {
 				System.out.println("Shit");
 			
 			//client.run();
+			baos.close();
+			
 		}
 		catch (Exception ex){
 			System.out.println("Aww... why don't you like me, File?");

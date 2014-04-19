@@ -162,7 +162,8 @@ public class ConnectionListener implements Runnable {
         Handshake hs = Handshake.parse(ByteBuffer.wrap(data));
         System.out.println("here6");
         if (!Arrays.equals(hs.getInfoHash(), this.torrent.getInfoHash())) {
-                /*throw new ParseException("Handshake for unknow torrent " +
+            System.out.println("Nuuuu");
+        	/*throw new ParseException("Handshake for unknow torrent " +
                                 Torrent.byteArrayToHexString(hs.getInfoHash()) +
                                 " from " + this.socketRepr(socket) + ".", pstrlen + 9);*/
         }
@@ -186,7 +187,7 @@ public class ConnectionListener implements Runnable {
         os.write(hs.getDataBytes(), 0, hs.getDataBytes().length);
 	}
 	
-	public boolean connect(Peer peer) {
+	public Peer connect(Peer peer) {
 		Socket socket = new Socket();
         InetSocketAddress address = peer.getInetSocketAddress();
 
@@ -195,16 +196,21 @@ public class ConnectionListener implements Runnable {
         } catch (IOException ioe) {
                 // Could not connect to peer, abort
         	System.out.println("could not connect to peer");
-                //logger.warn("Could not connect to {}: {}", peer, ioe.getMessage());
-                return false;
+        	try { socket.close(); } catch (IOException e) { }
+                //logger.warn("Could not connect to {}: {}", peer, ioe.getMessage());   
+        	return null;
         }
 
         try {
                 sendHandshake(socket);
                 Handshake hs = getHandshake(socket,
                                 (peer.hasPeerId() ? peer.getPeerId().array() : null));
+                System.out.println("Maybe peer?" + hs.getPeerId());
                 //this.fireNewPeerConnection(socket, hs.getPeerId());
-                return true;
+                
+                Peer ret = new Peer(address.getHostString(), address.getPort(), ByteBuffer.wrap(hs.getPeerId()));
+                System.out.println("Peer peer? " + ret.getPeerId().array());
+                return ret;
         } catch (ParseException pe) {
                 //logger.debug("Invalid handshake from {}: {}",
                         //this.socketRepr(socket), pe.getMessage());
@@ -221,6 +227,6 @@ public class ConnectionListener implements Runnable {
                 }
         }
 
-        return false;
+        return null;
 	}
 }
