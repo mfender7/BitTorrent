@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -36,6 +38,27 @@ public class TorrentFile {
 	public int getPieces(){
 		return pieces;
 	}
+
+	public boolean establishPeer(Peer p){
+		try{
+			Socket socket = new Socket();
+			socket.connect(p.getInetSocketAddress(), 3000);
+			OutputStream os = socket.getOutputStream();
+			//write/send stuff
+			
+			InputStream is = socket.getInputStream();
+			PeerMessage pm;
+			
+			return true;
+		} catch (Exception ex){
+			
+		}
+		return false;
+	}
+	
+	public void requestPiece(){
+		
+	}
 	
 	public void downloadPiece(int piece, Peer p) throws IOException{
 		//Start off at offset 0 for any piece.
@@ -67,14 +90,40 @@ public class TorrentFile {
 	private static class PeerMessage{
 		
 		//CONSTANTS, YEAH
-		public enum Message { CHOKE(0) , UNCHOKE(1), INTERESTED(2), 
-			UNINTERESTED(3), HAVE(4), BITFIELD(5), REQUEST(6), PIECE(7), CANCEL(8); 
-			
-			private int val;
-			Message(int val){
-				this.val = val;
+		public enum Type {
+			KEEP_ALIVE(-1),
+			CHOKE(0),
+			UNCHOKE(1),
+			INTERESTED(2),
+			NOT_INTERESTED(3),
+			HAVE(4),
+			BITFIELD(5),
+			REQUEST(6),
+			PIECE(7),
+			CANCEL(8);
+
+			private int id;
+			Type(int id) {
+				this.id = id;
 			}
-		}
+
+			public boolean equals(byte c) {
+				return this.id == c;
+			}
+
+			public int getType() {
+				return this.id;
+			}
+
+			public static Type get(int c) {
+				for (Type t : Type.values()) {
+					if (t.equals(c)) {
+						return t;
+					}
+				}
+				return null;
+			}
+		};
 		
 		//actual fields
 		private int length;
@@ -84,114 +133,140 @@ public class TorrentFile {
 		private int blockOffset;
 		private int blockOther;
 		
+		
+		
+		public PeerMessage(){ }
+		
 		public PeerMessage(ByteBuffer message){
 			byte[] field = new byte[1]; 
-			message.get(field);
-			length = field[0]; //payload length
+			length = message.getInt(); //payload length
 			field = new byte[1];
-			message.get(field); 
-			messageID = field[0]; //messageID
+			messageID = message.getInt();  //messageID
 			//payload = new byte[length]; //get that payload ready
-			field = new byte[length];
+			field = new byte[length - 1];
 			message.get(field); //put the payload stuff into its own array, dang it
-			if(messageID >= Message.HAVE.val)
+			if(messageID >= Type.HAVE.getType())
 				parse(message);
 		}
 		
 		//parse the messages that actually have a payload
 		private void parse(ByteBuffer message){
-			if(messageID == Message.HAVE.val){
-				//id 4, payload of 4
+			Type type = Type.get((byte) messageID);
+			
+			switch(type){
+				case HAVE:
+					//payload is a number denoting the index of a piece 
+					//that the peer has successfully downloaded and validated
+				case BITFIELD:
+					
+				case REQUEST:
+					
+				case PIECE:
+					byte[] field = new byte[4];
+					message.get(field); //piece index!
+					if(index == ByteBuffer.wrap(field).getInt())
+						System.out.println("Alright, go go go.");
+					field = new byte[4];
+					message.get(field);
+					if(blockOffset == ByteBuffer.wrap(field).getInt())
+						System.out.println("Yay, right offset!");
+					payload = new byte[length - 9];
+					message.get(payload);
+					blockOffset += 1;
+					
+					break;
+				case CANCEL:	
+			}
+		}
+		
+		public ByteBuffer sendMessage(int id){
+			Type type = Type.get((byte)id);
+			switch(type){
+			case CHOKE:
+				return sendChoke();
+			case UNCHOKE:
+				return sendUnchoke();
+			case INTERESTED:
+				return sendInterested();
+			case NOT_INTERESTED:
+				return sendNotInterested();
+			case HAVE:
 				//payload is a number denoting the index of a piece 
 				//that the peer has successfully downloaded and validated
-				
-			}
-			else if (messageID == Message.BITFIELD.val){
-				
-			}
-			else if (messageID == Message.REQUEST.val){
-				
-			}
-			else if (messageID == Message.PIECE.val){
-				//received a piece, so download it and move on to the next offset
-				//you know, assuming it's the one we're trying to download
-				//REFERENCE
-				//  Pieces......: 1294 piece(s) (262144 byte(s)/piece)
-				//  Total size..: 339006116 byte(s)
-				
-				byte[] field = new byte[4];
-				message.get(field); //piece index!
-				if(index == ByteBuffer.wrap(field).getInt())
-					System.out.println("Alright, go go go.");
-				field = new byte[4];
-				message.get(field);
-				if(blockOffset == ByteBuffer.wrap(field).getInt())
-					System.out.println("Yay, right offset!");
-				payload = new byte[length - 9];
-				message.get(payload);
-				blockOffset += 1;
-			}
-			else if (messageID == Message.CANCEL.val){
-				
-			}
-		}
-		
-		public PeerMessage sendMessage(int id){
-			if (messageID == Message.BITFIELD.val)
-				return sendBitfield();
-			else if (messageID == Message.REQUEST.val)
-				return sendRequest();
-			else if (messageID == Message.CHOKE.val)
-				return sendChoke();
-			else if (messageID == Message.UNCHOKE.val)
-				return sendUnchoke();
-			else if (messageID == Message.INTERESTED.val)
-				return sendInterested();
-			else if (messageID == Message.UNINTERESTED.val)
-				return sendUninterested();
-			else if (messageID == Message.HAVE.val)
 				return sendHave();
-			else if (messageID == Message.PIECE.val)
+			case BITFIELD:
+				return sendBitfield();
+			case REQUEST:
+				return sendRequest();
+			case PIECE:
 				return sendPiece();
-			else if (messageID == Message.CANCEL.val)
+			case CANCEL:
 				return sendCancel();
-			return null;
+			default:
+				return null;
+			}
 		}
 		
-		private PeerMessage sendChoke(){
-			return null;
+		public ByteBuffer craft(){
+			ByteBuffer buffer = ByteBuffer.wrap(new byte[1 + length]);
+			buffer.put((byte)length);
+			buffer.put((byte)messageID);
+			buffer.put(payload);
+			return buffer;
 		}
 		
-		private PeerMessage sendUnchoke(){
-			return null;
+		private ByteBuffer sendChoke(){
+			length = 1;
+			messageID = 0;
+			return craft();
 		}
 		
-		private PeerMessage sendInterested(){
-			return null;
+		private ByteBuffer sendUnchoke(){
+			length = 1;
+			messageID = 1;
+			return craft();
 		}
 		
-		private PeerMessage sendUninterested(){
-			return null;
+		private ByteBuffer sendInterested(){
+			length = 1;
+			messageID = 2;
+			return craft();
 		}
 		
-		private PeerMessage sendHave(){
-			return null;
+		private ByteBuffer sendNotInterested(){
+			length = 1;
+			messageID = 3;
+			return craft();
 		}
 		
-		private PeerMessage sendPiece(){
-			return null;
+		private ByteBuffer sendHave(){
+			length = 0;
+			messageID = 4;
+			return craft();
 		}
 		
-		private PeerMessage sendCancel(){
-			return null;
+		private ByteBuffer sendPiece(){
+			length = 0;
+			messageID = 5;
+			return craft();
 		}
 		
-		private PeerMessage sendRequest(){
-			return null;
+		private ByteBuffer sendCancel(){
+			length = 0;
+			messageID = 6;
+			return craft();
 		}
 		
-		private PeerMessage sendBitfield(){
-			return null;
+		private ByteBuffer sendRequest(){
+			length = 0;
+			messageID = 7;
+			return craft();
+		}
+		
+		private ByteBuffer sendBitfield(){
+			length = 0;
+			messageID = 4;
+			return craft();
 		}
 	}
 	

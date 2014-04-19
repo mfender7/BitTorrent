@@ -121,6 +121,12 @@ public class App {
 							Peer p = peers.get(i);
 							Peer peer = client.getService().connect(p);
 							if(peer != null) { //then we can do stuffs	
+								TorrentFile tFile = new TorrentFile(torrent);
+								//first we gotta be overly obnoxious and tell it that we're unchoked
+								
+								//.. let's poke it and make sure it's actually interested.
+								if(!tFile.establishPeer(p))
+									continue;
 								
 								piece += 1;
 							}
