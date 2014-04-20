@@ -36,22 +36,28 @@ public class TorrentFile {
 	}
 	
 	public int getPieces(){
+		
 		return pieces;
 	}
 
 	public Socket establishPeer(Peer p){
 		try{
-			Socket socket = new Socket();
-			socket.connect(p.getInetSocketAddress(), 3000);
+			Socket socket = p.getSocket();
+			//socket.connect(p.getInetSocketAddress(), 3000);
 			OutputStream os = socket.getOutputStream();
+			InputStream is = socket.getInputStream();
+			int r = is.read();
 			//write/send stuff
 			ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
 			System.out.println("here1");
 			os.write(buffer.array(), 0, buffer.array().length);
 			System.out.println("here2");
-			InputStream is = socket.getInputStream();
 			byte[] resp = new byte[5];
 			int read = is.read(resp);
+			ByteBuffer buf = ByteBuffer.wrap(resp);
+			PeerMessage mess = new PeerMessage(buf);
+			System.out.println("MessageID " + mess.getMessageID());
+			System.out.println("Length " + mess.getLength());
 			System.out.println("here3");
 			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
 			System.out.println("here4");
@@ -152,12 +158,12 @@ public class TorrentFile {
 		public PeerMessage(){ }
 		
 		public PeerMessage(ByteBuffer message){
-			byte[] field = new byte[1]; 
+			//byte[] field = new byte[4]; 
 			length = message.getInt(); //payload length
-			field = new byte[1];
-			messageID = message.getInt();  //messageID
+			//field = new byte[1];
+			messageID = message.get();  //messageID
 			//payload = new byte[length]; //get that payload ready
-			field = new byte[length - 1];
+			byte[] field = new byte[length - 1];
 			message.get(field); //put the payload stuff into its own array, dang it
 			if(messageID >= Type.HAVE.getType())
 				parse(message);
@@ -191,6 +197,14 @@ public class TorrentFile {
 					break;
 				case CANCEL:	
 			}
+		}
+		
+		public int getMessageID(){
+			return messageID;
+		}
+		
+		public int getLength(){
+			return length;
 		}
 		
 		public ByteBuffer sendMessage(int id){

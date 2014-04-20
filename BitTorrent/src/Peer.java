@@ -2,6 +2,7 @@ import com.turn.ttorrent.common.Torrent;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 
 
@@ -16,6 +17,7 @@ public class Peer {
 	private int port;
 	private boolean interested;
 	private boolean choked;
+	private Socket socket;
 
 
 	public Peer(String ip, int port, ByteBuffer peerId) {
@@ -47,6 +49,14 @@ public class Peer {
 
 	public ByteBuffer getPeerId() {
 		return this.peerId;
+	}
+	
+	public Socket getSocket(){
+		return socket;
+	}
+	
+	public void setSocket(Socket socket){
+		this.socket = socket;
 	}
 	
 	/*public String toString() {

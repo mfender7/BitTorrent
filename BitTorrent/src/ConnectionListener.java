@@ -23,6 +23,7 @@ public class ConnectionListener implements Runnable {
 	private ServerSocket ssocket;
 	private boolean stop;
 	private int port;
+	private Socket socket;
 	
 	private ExecutorService executor;
 	private Thread thread;
@@ -182,7 +183,7 @@ public class ConnectionListener implements Runnable {
 	}
 	
 	public Peer connect(Peer peer) {
-		Socket socket = new Socket();
+		socket = new Socket();
         InetSocketAddress address = peer.getInetSocketAddress();
 
         try {
@@ -201,6 +202,7 @@ public class ConnectionListener implements Runnable {
                                 (peer.hasPeerId() ? peer.getPeerId().array() : null));
                 //this.fireNewPeerConnection(socket, hs.getPeerId());
                 Peer ret = new Peer(address.getHostString(), address.getPort(), ByteBuffer.wrap(hs.getPeerId()));
+                ret.setSocket(socket);
                 return ret;
         } catch (ParseException pe) {
                 //logger.debug("Invalid handshake from {}: {}",
