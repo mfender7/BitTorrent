@@ -130,8 +130,10 @@ public class App {
 								//.. let's poke it and make sure it's actually interested.
 								Socket socket;
 								System.out.println("Establish peer connection");
-								if((socket = tFile.establishPeer(peer)) == null)
-									break;
+								if((socket = tFile.establishPeer(peer)) == null){
+									piece += 1;
+									continue;
+								}
 								System.out.println("Go go go");
 								
 								piece += 1;

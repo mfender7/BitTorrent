@@ -9,6 +9,8 @@ import java.nio.channels.FileChannel;
 import java.util.BitSet;
 import java.util.Map;
 
+import org.apache.commons.codec.binary.Hex;
+
 import com.turn.ttorrent.common.Torrent;
 
 public class TorrentFile {
@@ -185,14 +187,19 @@ public class TorrentFile {
 					System.out.println("THEY HAS SOMETHING");
 					break;
 				case BITFIELD:
-					BitSet bitfield = new BitSet(message.remaining()*8);
-					for (int i=0; i < message.remaining()*8; i++) {
-						if ((message.get(i/8) & (1 << (7 -(i % 8)))) > 0) {
-							bitfield.set(i);
+					System.out.println(new String(Hex.encodeHex(payload)));
+					System.out.println(new String(Hex.encodeHex(payload)).length());
+					BitSet bitfield = new BitSet(payload.length);
+					for(int i = 0; i < payload.length; i++){
+						if ((payload[i] & (1 << (7 -(i % 8)))) > 0){
+							bitfield.set(i*8);
 						}
 					}
+					byte[] arr = bitfield.toByteArray();
 					System.out.println("Bitfield bullshit");
 					System.out.println(bitfield.length());
+					System.out.println(bitfield.size());
+					
 					break;
 				case REQUEST:
 					
