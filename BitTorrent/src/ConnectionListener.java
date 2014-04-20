@@ -148,19 +148,13 @@ public class ConnectionListener implements Runnable {
 		// Read the handshake from the wire
 		System.out.println("in getHandshake");
 		InputStream input = socket.getInputStream();
-		System.out.println("here1");
-        int pstrlen = input.read();
-        System.out.println("here2");
+		int pstrlen = input.read();
         byte[] data = new byte[Handshake.LENGTH];
-        System.out.println("here3");
         data[0] = (byte)pstrlen;
-        System.out.println("here4");
         input.read(data, 1, data.length-1);
-        System.out.println("here5");
 
         // Parse and check the handshake
         Handshake hs = Handshake.parse(ByteBuffer.wrap(data));
-        System.out.println("here6");
         if (!Arrays.equals(hs.getInfoHash(), this.torrent.getInfoHash())) {
             System.out.println("Nuuuu");
         	/*throw new ParseException("Handshake for unknow torrent " +
@@ -205,11 +199,8 @@ public class ConnectionListener implements Runnable {
                 sendHandshake(socket);
                 Handshake hs = getHandshake(socket,
                                 (peer.hasPeerId() ? peer.getPeerId().array() : null));
-                System.out.println("Maybe peer?" + hs.getPeerId());
                 //this.fireNewPeerConnection(socket, hs.getPeerId());
-                
                 Peer ret = new Peer(address.getHostString(), address.getPort(), ByteBuffer.wrap(hs.getPeerId()));
-                System.out.println("Peer peer? " + ret.getPeerId().array());
                 return ret;
         } catch (ParseException pe) {
                 //logger.debug("Invalid handshake from {}: {}",

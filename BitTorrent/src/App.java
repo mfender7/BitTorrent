@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -117,21 +118,25 @@ public class App {
 				while(piece < file.getPieces()){
 					for(int i = 0; i < peers.size(); i++){
 						try{
-							System.out.println("Peer number index " + i);
+							System.out.println(String.format("Trying Peer[%d/%d]", i + 1, peers.size()));
 							Peer p = peers.get(i);
 							Peer peer = client.getService().connect(p);
 							if(peer != null) { //then we can do stuffs	
+								System.out.println("Creating torrentfile");
 								TorrentFile tFile = new TorrentFile(torrent);
 								//first we gotta be overly obnoxious and tell it that we're unchoked
 								
 								//.. let's poke it and make sure it's actually interested.
-								if(!tFile.establishPeer(p))
-									continue;
+								Socket socket;
+								System.out.println("Establish peer connection");
+								if((socket = tFile.establishPeer(p)) == null)
+									break;
+								System.out.println("Go go go");
 								
 								piece += 1;
 							}
 							else
-								System.out.println(String.format("Peer[%d] - %s \ndidn't work. *sigh*", i, p.toString()));
+								System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", i + 1, peers.size()));
 						} catch (Exception ex){
 							System.out.println("Peer index " + i);
 							System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");

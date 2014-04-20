@@ -39,21 +39,35 @@ public class TorrentFile {
 		return pieces;
 	}
 
-	public boolean establishPeer(Peer p){
+	public Socket establishPeer(Peer p){
 		try{
 			Socket socket = new Socket();
 			socket.connect(p.getInetSocketAddress(), 3000);
 			OutputStream os = socket.getOutputStream();
 			//write/send stuff
-			
+			ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
+			System.out.println("here1");
+			os.write(buffer.array(), 0, buffer.array().length);
+			System.out.println("here2");
 			InputStream is = socket.getInputStream();
-			PeerMessage pm;
-			
-			return true;
+			byte[] resp = new byte[5];
+			int read = is.read(resp);
+			System.out.println("here3");
+			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
+			System.out.println("here4");
+			os.write(buffer.array(), 0, buffer.array().length);
+			read = is.read();
+			System.out.println("Read " + read);
+			//Wait for bitfield or have mesage, then 
+			System.out.println("I have no idea how to figure out whether we're good to go or not.....");
+			//socket.close();
+			return socket;
 		} catch (Exception ex){
+			System.out.println("Shit, what happened.");
+			System.out.println(ex.getMessage());
 			
 		}
-		return false;
+		return null;
 	}
 	
 	public void requestPiece(){
@@ -107,7 +121,7 @@ public class TorrentFile {
 				this.id = id;
 			}
 
-			public boolean equals(byte c) {
+			public boolean equals(int c) {
 				return this.id == c;
 			}
 
@@ -180,38 +194,42 @@ public class TorrentFile {
 		}
 		
 		public ByteBuffer sendMessage(int id){
-			Type type = Type.get((byte)id);
+			Type type = Type.get(id);
 			switch(type){
-			case CHOKE:
-				return sendChoke();
-			case UNCHOKE:
-				return sendUnchoke();
-			case INTERESTED:
-				return sendInterested();
-			case NOT_INTERESTED:
-				return sendNotInterested();
-			case HAVE:
-				//payload is a number denoting the index of a piece 
-				//that the peer has successfully downloaded and validated
-				return sendHave();
-			case BITFIELD:
-				return sendBitfield();
-			case REQUEST:
-				return sendRequest();
-			case PIECE:
-				return sendPiece();
-			case CANCEL:
-				return sendCancel();
-			default:
-				return null;
+				case CHOKE:
+					return sendChoke();
+				case UNCHOKE:
+					return sendUnchoke();
+				case INTERESTED:
+					return sendInterested();
+				case NOT_INTERESTED:
+					return sendNotInterested();
+				case HAVE:
+					//payload is a number denoting the index of a piece 
+					//that the peer has successfully downloaded and validated
+					return sendHave();
+				case BITFIELD:
+					return sendBitfield();
+				case REQUEST:
+					return sendRequest();
+				case PIECE:
+					return sendPiece();
+				case CANCEL:
+					return sendCancel();
+				default:
+					return null;
 			}
 		}
 		
 		public ByteBuffer craft(){
-			ByteBuffer buffer = ByteBuffer.wrap(new byte[1 + length]);
-			buffer.put((byte)length);
+			ByteBuffer buffer = ByteBuffer.allocate(4 + length);
+			buffer.rewind();
+			buffer.putInt(1);
 			buffer.put((byte)messageID);
-			buffer.put(payload);
+			if(length > 1){				
+				buffer.put(payload);
+			}
+			//buffer.rewind();
 			return buffer;
 		}
 		
@@ -271,5 +289,3 @@ public class TorrentFile {
 	}
 	
 }
-
-
