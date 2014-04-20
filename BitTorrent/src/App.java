@@ -131,7 +131,7 @@ public class App {
 								Socket socket;
 								System.out.println("Establish peer connection");
 								if((socket = tFile.establishPeer(peer)) == null){
-									piece += 1;
+									i += 1;
 									continue;
 								}
 								System.out.println("Go go go");
