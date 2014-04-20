@@ -116,7 +116,8 @@ public class App {
 				TorrentFile file = new TorrentFile(torrent);
 				int piece = 0;
 				while(piece < file.getPieces()){
-					for(int i = 0; i < peers.size(); i++){
+					int i = 0;
+					while(i < peers.size()) {
 						try{
 							System.out.println(String.format("Trying Peer[%d/%d]", i + 1, peers.size()));
 							Peer p = peers.get(i);
@@ -141,6 +142,7 @@ public class App {
 							System.out.println("Peer index " + i);
 							System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
 						}
+						i += 1;
 					}
 				
 				}
