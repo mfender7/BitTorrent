@@ -95,7 +95,7 @@ public class App {
 
 		Torrent torrent = null;
 		try{			
-			torrent = Torrent.load(new File("dsl-4.4.10.iso.torrent"));
+			torrent = Torrent.load(new File("test.mkv.torrent"));
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();

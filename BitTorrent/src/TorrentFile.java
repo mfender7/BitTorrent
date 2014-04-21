@@ -6,7 +6,9 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.codec.binary.Hex;
@@ -57,28 +59,35 @@ public class TorrentFile {
 			InputStream is = socket.getInputStream();
 			//first let's get dat bitfield...
 			ByteBuffer buffer = PeerMessage.parseHeader(is);
+			System.out.println("wat");
 			PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
+			if(mes.getMessageID() == 4){
+				System.out.println("HAVE");	
+				buffer = PeerMessage.parseHeader(is);
+				mes = new PeerMessage(buffer, this, this.self, socket);
+			}
+			else{
+				System.out.println("BITFIELD");
+			}
 			
+			buffer = ByteBuffer.allocate(0);
 			//unchoked message
 			OutputStream os = socket.getOutputStream();
 			//write/send stuff
 			buffer.clear();
 			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
-			//os.write(buffer.array(), 0, buffer.array().length);
 			os.write(buffer.array());
+			System.out.println(socket.isClosed());
+			is = socket.getInputStream();
+			//System.out.println(is.read());
 			buffer.clear();
 			buffer = PeerMessage.parseHeader(is);
 			PeerMessage mess = new PeerMessage(buffer, this, this.self, socket);
-			//we should check if it has something we want, then send interested message.
-			//this now happens in parse from new PeerMessage above.
-			/*
-			buffer.clear();
-			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
-			//os.write(buffer.array(), 0, buffer.array().length);
-			os.write(buffer.array());*/
-			buffer.clear();
-			buffer = PeerMessage.parseHeader(is);
-			
+			//interested message
+//			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
+//			os.write(buffer.array(), 0, buffer.array().length);
+//			buffer = PeerMessage.parseHeader(is);
+
 			return socket;
 		} catch (Exception ex){
 			System.out.println("Shit happened.");
@@ -170,17 +179,33 @@ public class TorrentFile {
 		public PeerMessage(){ }
 		
 		public static ByteBuffer parseHeader(InputStream stream) throws IOException {
-			byte[] length = new byte[4];
-			stream.read(length);
+			byte[] length = new byte[5];
+			int r = stream.read(length, 0, length.length);
+			System.out.println("read " + r);
 			ByteBuffer buffer = ByteBuffer.wrap(length);
-			//int len = ByteBuffer.wrap(length).getInt();
+
+			/*//int len = ByteBuffer.wrap(length).getInt();
 			int len = buffer.getInt();
 			System.out.println("len = "+len);
 			byte[] body = new byte[len];
 			stream.read(body);
 			buffer = ByteBuffer.allocate(4 + len);
-			buffer.put(length).put(body);
+			buffer.put(length).put(body);*/
 			
+			int len = buffer.getInt();
+			if(len == 0)
+				return parseHeader(stream);
+			int mi = buffer.get();
+			byte[] body = new byte[1];
+			if(len > 0){
+				body = new byte[len - 1];
+				r = stream.read(body, 0, len - 1);
+				System.out.println("read " + r);
+				buffer = ByteBuffer.allocate(4 + len);
+				buffer.put(length);
+				buffer.put(body);
+			}
+
 			return buffer;
 		}
 		
@@ -230,18 +255,35 @@ public class TorrentFile {
 					}
 					break;
 				case BITFIELD:
+					message.position(5);
 					System.out.println(new String(Hex.encodeHex(payload)));
 					System.out.println(new String(Hex.encodeHex(payload)).length());
 					BitSet bitfield = new BitSet(payload.length);
-					for(int i = 0; i < payload.length; i++){
-						if ((payload[i] & (1 << (7 -(i % 8)))) > 0){
-							bitfield.set(i*8);
+					List<Integer> indeces = new ArrayList<Integer>();
+					for(int i = 0; i < message.remaining()*8; i++){
+						if ((message.get(i/8) & (1 << (7 -(i % 8)))) > 0){
+							//indeces.add(i);
+							
+							bitfield.set(i);
 						}
 					}
-					byte[] arr = bitfield.toByteArray();
+					
+					//byte[] onTheLeft = new byte[]{1, 0, 0, 0, 0, 0, 0, 0};
+					//BitSet bs = BitSet.valueOf(onTheLeft);
+					for(int i = 0; i < payload.length; i++){
+						byte a = payload[i];
+						for(int j = 0; j < 8; j++){
+							int index = i * 8 + j;
+							if ((a & (0x10000000 >> j)) != 0){
+								indeces.add(index);
+								System.out.println("Added index: " + index);
+							}
+						}
+					}
+
 					System.out.println("Bitfield bullshit");
-					System.out.println(bitfield.length());
-					System.out.println(bitfield.size());
+					
+					//... pull out the list of 
 					
 					break;
 				case REQUEST:
@@ -307,7 +349,7 @@ public class TorrentFile {
 		public ByteBuffer craft(){
 			ByteBuffer buffer = ByteBuffer.allocate(4 + length);
 			buffer.rewind();
-			buffer.putInt(1);
+			buffer.putInt(length);
 			buffer.put((byte)messageID);
 			if(length > 1){				
 				buffer.put(payload);
