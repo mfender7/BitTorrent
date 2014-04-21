@@ -113,6 +113,7 @@ public class App {
 			Map<String, BEValue> params = decoded.getMap();
 			if(params.containsKey("peers")){
 				List<Peer> peers = toPeerList(params.get("peers").getBytes());
+				System.out.println("creating TorrentFile");
 				TorrentFile file = new TorrentFile(torrent, client);
 				int piece = 0;
 				while(piece < file.getPieces()){
@@ -123,20 +124,19 @@ public class App {
 							Peer p = peers.get(i);
 							Peer peer = client.getService().connect(p);
 							if(peer != null) { //then we can do stuffs	
-								System.out.println("Creating torrentfile");
-								TorrentFile tFile = new TorrentFile(torrent, client);
 								//first we gotta be overly obnoxious and tell it that we're unchoked
 								
 								//.. let's poke it and make sure it's actually interested.
 								Socket socket;
 								System.out.println("Establish peer connection");
-								if((socket = tFile.establishPeer(peer)) == null){
+
+								if((peer = tFile.establishPeer(peer)) == null){
 									i++;
 									continue;
 								}
 								else {
 									System.out.println("Go go go");
-									piece += tFile.getPieces();
+									piece += file.getPieces();
 									//piece += 1;
 								}
 							}

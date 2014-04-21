@@ -105,7 +105,18 @@ peer_interested: peer is interested in this client*/
 	}
 	
 	public void addDownloadedTorrentPiecesList(Torrent torrent, List<Integer> pieceList){
-		
+		if (downloadedTorrentPieces.containsKey(torrent)){
+			List<Integer> list = downloadedTorrentPieces.get(torrent);
+			for (int i : pieceList){
+				if (!list.contains(i)){
+					list.add(i);
+				}
+			}
+		}
+		else { //torrent not in the list yet
+			//List<Integer> newList = new ArrayList<Integer>();
+			downloadedTorrentPieces.put(torrent, pieceList);
+		}
 	}
 	
 	public InetSocketAddress getInetSocketAddress(){

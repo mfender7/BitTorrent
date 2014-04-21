@@ -26,8 +26,9 @@ public class TorrentFile {
 	private Torrent torrent;
 	private File torrentFile;
 	private Map<Integer, TorrentFilePart> torrentParts;
-	private Peer peer;
+	private List<Peer> peerList;
 	private Peer self;
+	private Peer currentPeer;
 	
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -38,8 +39,12 @@ public class TorrentFile {
 		this.fileSize = torrent.getSize();
 		this.offset = 0L;
 		this.pieces = (int)Math.ceil((double)this.fileSize / this.pieceLength) + 1;
-		this.peer = peer;
 		this.self = client.getPeer();
+		this.peerList = new ArrayList<Peer>();
+	}
+	
+	public Torrent getTorrent(){
+		return this.torrent;
 	}
 	
 	public int getPieces(){
@@ -47,57 +52,82 @@ public class TorrentFile {
 		return pieces;
 	}
 	
+	public List<Peer> getPeerList(){
+		return this.peerList;
+	}
+	
+	public void addToPeerList(Peer p){
+		if (!this.peerList.contains(p)){
+			this.peerList.add(p);
+		}
+	}
+	
+	public Peer getCurrentPeer(){
+		return this.currentPeer;
+	}
+	
+	public void setCurrentPeer(Peer p){
+		this.currentPeer = p;
+	}
+	
 	public int getPiecesFromPeer(){
 		//here get all pieces from peer that we can/need
+		//for each piece that the peer has
+		//if self(peer) doesn't have it
+		//request it if unchoked
 		System.out.println("need to implement torrentfile.getpiecesfrompeer?");
 		return 0;
 	}
 
-	public Socket establishPeer(Peer p){
+	/*in here we need to add the established peer to the list and set it as the currentpeer
+	 * */
+	public Peer establishPeer(Peer p){
 		try{ 
+			this.addToPeerList(p); //add it here?
+			this.currentPeer = p;
 			Socket socket = p.getSocket();
 			InputStream is = socket.getInputStream();
+			OutputStream os = socket.getOutputStream();
 			//first let's get dat bitfield...
-			ByteBuffer buffer = PeerMessage.parseHeader(is);
-			System.out.println("wat");
-			PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
-			if(mes.getMessageID() == 5){
-				//Bitfield, so we need to read in the next HAVE message
-				System.out.println("BITFIELD, READING IMMINENT HAVE... or unchoke... or choke");	
+			ByteBuffer buffer; // = PeerMessage.parseHeader(is);
+			PeerMessage mes;
+			while(true){
 				buffer = PeerMessage.parseHeader(is);
 				mes = new PeerMessage(buffer, this, this.self, socket);
-				//we need to loop here to actually get stuff
+				if(mes.getMessageID() == 5){
+					//Bitfield, so we need to read in the next HAVE message
+					System.out.println("Got a Bitfield message!");
+				}
+				else if (mes.getMessageID() == 4){
+					System.out.println("JUST HAVE");
+					//let's send an interested? maybe? possibly? or unchoked?
+					///wait, that probably means they're interested *and* not choked. Su-weeet
+					p.setPeer_choking(false);
+					p.setPeer_interested(true);
+//					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), 0);
+//					os.write(buffer.array());
+				}
+				else if(mes.getMessageID() == 3){
+					System.out.println("That meanie face peer isn't interested in us. Hmph. We'll go find another peer.");
+					return null;
+				}
+				else if(mes.getMessageID() == 2){
+					p.setPeer_interested(true);
+					System.out.println("Are... are you interested? Really??? :D");
+				}
+				else if(mes.getMessageID() == 1){
+					p.setPeer_choking(false);
+					System.out.println("Unchoked!");
+				}
+				else if (mes.getMessageID() == 0){
+					System.out.println("Choked message! Abandon ship!");
+					return null;
+				}
+				if(p.getPeer_interested() && !p.getPeer_choking())
+					return peer;
 			}
-			else{
-				System.out.println("JUST HAVE");
-			}
-			
-			buffer = ByteBuffer.allocate(0);
-			//unchoked message
-			OutputStream os = socket.getOutputStream();
-			//write/send stuff
-			buffer.clear();
-			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);
-			this.self.setPeer_choking(false); //no longer choking peer
-			os.write(buffer.array());
-			System.out.println(socket.isClosed());
-			is = socket.getInputStream();
-			//System.out.println(is.read());
-			while (true){
-				buffer.clear();
-				buffer = PeerMessage.parseHeader(is);
-				new PeerMessage(buffer, this, this.self, socket);
-				if (self.getPeer_choking()){ break; } //go find another peer if it starts choking us. jerk.
-			}
-			//interested message
-//			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
-//			os.write(buffer.array(), 0, buffer.array().length);
-//			buffer = PeerMessage.parseHeader(is);
-
-			return socket;
 		} catch (Exception ex){
 			System.out.println("Shit happened.");
-			//ex.printStackTrace();
 		}
 		return null;
 	}
@@ -127,6 +157,7 @@ public class TorrentFile {
 		
 		private ByteBuffer piece;
 		private long offset;
+		private byte[] data;
 		
 		public TorrentFilePart(ByteBuffer piece, long offset){
 			this.piece = piece;
@@ -254,9 +285,26 @@ public class TorrentFile {
 					ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
 					int piece = payloadBuff.getInt();
 					OutputStream os;
+					InputStream is;
 					//validate index
 					if (piece >= 0 && piece < file.getPieces()){
 						if (!self.findTorrentPiece(file.torrent, piece)){
+							//send unchoke message
+							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);							
+							/*try{
+								os = s.getOutputStream();
+								os.write(messageBuffer.array());
+								System.out.println("unchoked message sent.");
+								self.setAm_choking(false);
+								is = s.getInputStream();
+								messageBuffer = PeerMessage.parseHeader(is);
+								int c = messageBuffer.array()[4];
+								if(c == 1){ System.out.println("Peer is unchoked"); self.setPeer_choking(false);}
+							} catch (Exception ex){
+								
+							}
+							
+							
 							//send interested message
 							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 							//os.write(buffer.array(), 0, buffer.array().length);
@@ -270,6 +318,9 @@ public class TorrentFile {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
+							
+							//confirm peer isn't choked
+							
 							if (!self.getPeer_choking()){ //not being choked by peer, request piece
 								//send a request message
 								messageBuffer.clear();
@@ -282,8 +333,7 @@ public class TorrentFile {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-							}
-
+							}*/
 						}
 					}
 					break;
@@ -292,7 +342,8 @@ public class TorrentFile {
 					System.out.println(new String(Hex.encodeHex(payload)));
 					System.out.println(new String(Hex.encodeHex(payload)).length());
 					BitSet bitfield = new BitSet(payload.length);
-					List<Integer> indeces = new ArrayList<Integer>();
+<<<<<<< HEAD
+					List<Integer> indices = new ArrayList<Integer>();
 					for(int i = 0; i < message.remaining()*8; i++){
 						if ((message.get(i/8) & (1 << (7 -(i % 8)))) > 0){
 							//indeces.add(i);
@@ -300,6 +351,9 @@ public class TorrentFile {
 							bitfield.set(i);
 						}
 					}
+=======
+					List<Integer> indeces = new ArrayList<Integer>();
+>>>>>>> e4d807f... Changed establishPeer to loop until we know whether we're actually getting stuff from them.
 					
 					//byte[] onTheLeft = new byte[]{1, 0, 0, 0, 0, 0, 0, 0};
 					//BitSet bs = BitSet.valueOf(onTheLeft);
@@ -308,11 +362,12 @@ public class TorrentFile {
 						for(int j = 0; j < 8; j++){
 							int index = i * 8 + j;
 							if ((a & (0x10000000 >> j)) != 0){
-								indeces.add(index);
+								indices.add(index);
 								//System.out.println("Added index: " + index);
 							}
 						}
 					}
+					file.getCurrentPeer().addDownloadedTorrentPiecesList(file.getTorrent(), indices);
 
 					System.out.println("Bitfield bullshit");
 					
@@ -431,7 +486,7 @@ public class TorrentFile {
 		private ByteBuffer sendRequest(int piece){
 			length = 12; //payload length 12
 			messageID = 6;
-			piece = piece;
+			this.piece = piece;
 			return craft();
 		}
 		
