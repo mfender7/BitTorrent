@@ -61,13 +61,14 @@ public class TorrentFile {
 			ByteBuffer buffer = PeerMessage.parseHeader(is);
 			System.out.println("wat");
 			PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
-			if(mes.getMessageID() == 4){
-				System.out.println("HAVE");	
+			if(mes.getMessageID() == 5){
+				//Bitfield, so we need to read in the next HAVE message
+				System.out.println("BITFIELD, READING IMMINENT HAVE");	
 				buffer = PeerMessage.parseHeader(is);
 				mes = new PeerMessage(buffer, this, this.self, socket);
 			}
 			else{
-				System.out.println("BITFIELD");
+				System.out.println("JUST HAVE");
 			}
 			
 			buffer = ByteBuffer.allocate(0);
@@ -193,7 +194,7 @@ public class TorrentFile {
 			buffer.put(length).put(body);*/
 			
 			int len = buffer.getInt();
-			if(len == 0)
+			if(len == 0 && r != -1)
 				return parseHeader(stream);
 			int mi = buffer.get();
 			byte[] body = new byte[1];
