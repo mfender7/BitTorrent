@@ -120,6 +120,7 @@ public class TorrentFile {
 					System.out.println("Unchoked!");
 					buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 					os.write(buffer.array());
+					p.setAm_interested(true);
 				}
 				else if (mes.getMessageID() == 0){
 					System.out.println("Choked message! Abandon ship!");
@@ -130,6 +131,7 @@ public class TorrentFile {
 			}
 		} catch (Exception ex){
 			System.out.println("Shit happened.");
+			ex.printStackTrace();
 		}
 		return null;
 	}
@@ -233,10 +235,10 @@ public class TorrentFile {
 			buffer.put(length).put(body);*/
 			
 			int len = buffer.getInt();
-			if(len == 0 && r != -1) {//wat is this
-				System.out.println("calling parseHeader w/in parseHeader");
-				return parseHeader(stream);
-			}
+//			if(len == 0 && r != -1) {//wat is this
+//				System.out.println("calling parseHeader w/in parseHeader");
+//				return parseHeader(stream);
+//			}
 			//int mi = buffer.get();
 			byte[] body = new byte[len];
 			r = stream.read(body);
@@ -290,23 +292,11 @@ public class TorrentFile {
 					InputStream is;
 					//validate index
 					if (piece >= 0 && piece < file.getPieces()){
-						if (!self.findTorrentPiece(file.torrent, piece)){
-							//send unchoke message
-							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);							
-							/*try{
-								os = s.getOutputStream();
-								os.write(messageBuffer.array());
-								System.out.println("unchoked message sent.");
-								self.setAm_choking(false);
-								is = s.getInputStream();
-								messageBuffer = PeerMessage.parseHeader(is);
-								int c = messageBuffer.array()[4];
-								if(c == 1){ System.out.println("Peer is unchoked"); self.setPeer_choking(false);}
-							} catch (Exception ex){
-								
-							}
-							
-							
+						/*if not in currentPeer's list, add it*/
+						if (!file.getCurrentPeer().findTorrentPiece(file.torrent, piece)){
+							file.getCurrentPeer().addDownloadedTorrentPiece(file.torrent, piece);
+						}
+						/*if (!self.findTorrentPiece(file.torrent, piece)){
 							//send interested message
 							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 							//os.write(buffer.array(), 0, buffer.array().length);
@@ -335,8 +325,8 @@ public class TorrentFile {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-							}*/
-						}
+							}
+						}*/
 					}
 					break;
 				case BITFIELD:
