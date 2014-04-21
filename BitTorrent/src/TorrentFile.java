@@ -25,8 +25,9 @@ public class TorrentFile {
 	private File torrentFile;
 	private Map<Integer, TorrentFilePart> torrentParts;
 	private Peer peer;
+	private Peer self;
 	
-	public TorrentFile(Torrent torrent) throws IOException {
+	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
 		this.pieceLength = torrent.getDecodedInfo().get("piece length").getInt();
 		//torrent.
@@ -36,36 +37,52 @@ public class TorrentFile {
 		this.offset = 0L;
 		this.pieces = (int)Math.ceil((double)this.fileSize / this.pieceLength) + 1;
 		this.peer = peer;
+		this.self = client.getPeer();
 	}
 	
 	public int getPieces(){
 		
 		return pieces;
 	}
+	
+	public int getPiecesFromPeer(){
+		//here get all pieces from peer that we can/need
+		System.out.println("need to implement torrentfile.getpiecesfrompeer?");
+		return 0;
+	}
 
 	public Socket establishPeer(Peer p){
-		try{
+		try{ 
 			Socket socket = p.getSocket();
 			InputStream is = socket.getInputStream();
 			//first let's get dat bitfield...
 			ByteBuffer buffer = PeerMessage.parseHeader(is);
-			PeerMessage mes = new PeerMessage(buffer);
+			PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
 			
 			//unchoked message
 			OutputStream os = socket.getOutputStream();
 			//write/send stuff
+			buffer.clear();
 			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
-			os.write(buffer.array(), 0, buffer.array().length);
+			//os.write(buffer.array(), 0, buffer.array().length);
+			os.write(buffer.array());
+			buffer.clear();
 			buffer = PeerMessage.parseHeader(is);
-			PeerMessage mess = new PeerMessage(buffer);
-			//interested message
+			PeerMessage mess = new PeerMessage(buffer, this, this.self, socket);
+			//we should check if it has something we want, then send interested message.
+			//this now happens in parse from new PeerMessage above.
+			/*
+			buffer.clear();
 			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
-			os.write(buffer.array(), 0, buffer.array().length);
+			//os.write(buffer.array(), 0, buffer.array().length);
+			os.write(buffer.array());*/
+			buffer.clear();
 			buffer = PeerMessage.parseHeader(is);
 			
 			return socket;
 		} catch (Exception ex){
-			System.out.println("Shit, what happened.");
+			System.out.println("Shit happened.");
+			//ex.printStackTrace();
 		}
 		return null;
 	}
@@ -73,6 +90,7 @@ public class TorrentFile {
 	public void requestPiece(){
 		
 	}
+	
 	
 	public void downloadPiece(int piece, Peer p) throws IOException{
 		//Start off at offset 0 for any piece.
@@ -155,36 +173,61 @@ public class TorrentFile {
 			byte[] length = new byte[4];
 			stream.read(length);
 			ByteBuffer buffer = ByteBuffer.wrap(length);
-			int len = ByteBuffer.wrap(length).getInt();
+			//int len = ByteBuffer.wrap(length).getInt();
+			int len = buffer.getInt();
+			System.out.println("len = "+len);
 			byte[] body = new byte[len];
 			stream.read(body);
 			buffer = ByteBuffer.allocate(4 + len);
 			buffer.put(length).put(body);
+			
 			return buffer;
 		}
 		
-		public PeerMessage(ByteBuffer message){
+		public PeerMessage(ByteBuffer message, TorrentFile file, Peer self, Socket s){
 			//byte[] field = new byte[4]; 
 			message.rewind();
 			this.length = message.getInt(); //payload length
 			//field = new byte[1];
 			messageID = message.get();  //messageID
+			System.out.println("messageID = "+messageID);
 			//payload = new byte[length]; //get that payload ready
 			this.payload = new byte[length - 1];
 			message.get(payload); //put the payload stuff into its own array, dang it
-			if(messageID >= Type.HAVE.getType())
-				parse(message);
+			if(messageID >= Type.HAVE.getType()) {
+				parse(message, file, self, s);
+			}
 		}
 		
 		//parse the messages that actually have a payload
-		private void parse(ByteBuffer message){
+		private void parse(ByteBuffer message, TorrentFile file, Peer self, Socket s){
 			Type type = Type.get((byte) messageID);
-			
+			System.out.println(type);
+			ByteBuffer messageBuffer;
 			switch(type){
 				case HAVE:
-					//payload is a number denoting the index of a piece 
-					//that the peer has successfully downloaded and validated
 					System.out.println("THEY HAS SOMETHING");
+					ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
+					int piece = payloadBuff.getInt();
+					//validate index
+					if (piece >= 0 && piece < file.getPieces()){
+						if (!self.findTorrentPiece(file.torrent, piece)){
+							//send interested message
+							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
+							//os.write(buffer.array(), 0, buffer.array().length);
+							OutputStream os;
+							try {
+								os = s.getOutputStream();
+								os.write(messageBuffer.array());
+								System.out.println("Interest message sent");
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+							//maybe send a request message
+						}
+					}
 					break;
 				case BITFIELD:
 					System.out.println(new String(Hex.encodeHex(payload)));
@@ -227,6 +270,10 @@ public class TorrentFile {
 		
 		public int getLength(){
 			return length;
+		}
+		
+		public byte[] getPayload(){
+			return payload;
 		}
 		
 		public ByteBuffer sendMessage(int id){

@@ -95,7 +95,7 @@ public class App {
 
 		Torrent torrent = null;
 		try{			
-			torrent = Torrent.load(new File("test.mkv.torrent"));
+			torrent = Torrent.load(new File("dsl-4.4.10.iso.torrent"));
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();
@@ -113,7 +113,7 @@ public class App {
 			Map<String, BEValue> params = decoded.getMap();
 			if(params.containsKey("peers")){
 				List<Peer> peers = toPeerList(params.get("peers").getBytes());
-				TorrentFile file = new TorrentFile(torrent);
+				TorrentFile file = new TorrentFile(torrent, client);
 				int piece = 0;
 				while(piece < file.getPieces()){
 					int i = 0;
@@ -124,19 +124,21 @@ public class App {
 							Peer peer = client.getService().connect(p);
 							if(peer != null) { //then we can do stuffs	
 								System.out.println("Creating torrentfile");
-								TorrentFile tFile = new TorrentFile(torrent);
+								TorrentFile tFile = new TorrentFile(torrent, client);
 								//first we gotta be overly obnoxious and tell it that we're unchoked
 								
 								//.. let's poke it and make sure it's actually interested.
 								Socket socket;
 								System.out.println("Establish peer connection");
 								if((socket = tFile.establishPeer(peer)) == null){
-									piece += 1;
+									i++;
 									continue;
 								}
-								System.out.println("Go go go");
-								
-								piece += 1;
+								else {
+									System.out.println("Go go go");
+									piece += tFile.getPieces();
+									//piece += 1;
+								}
 							}
 							else
 								System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", i + 1, peers.size()));

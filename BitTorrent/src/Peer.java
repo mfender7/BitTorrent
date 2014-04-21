@@ -4,6 +4,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class Peer {
@@ -18,6 +22,7 @@ public class Peer {
 	private boolean interested;
 	private boolean choked;
 	private Socket socket;
+	private Map<Torrent, List<Integer>> downloadedTorrentPieces;
 
 
 	public Peer(String ip, int port, ByteBuffer peerId) {
@@ -26,6 +31,7 @@ public class Peer {
 				this.address.getAddress(),
 				this.address.getPort());  // ?
 		this.port = port;
+		this.downloadedTorrentPieces = new HashMap();
 		
 		this.peerId = peerId;
 		this.hexPeerId = Torrent.byteArrayToHexString(peerId.array()); // ?
@@ -37,6 +43,32 @@ public class Peer {
 		this.hostId = String.format("%s:%d",
 				this.address.getAddress(),
 				this.address.getPort());  // ?
+	}
+	
+	public void addDownloadedTorrentPiece(Torrent torrent, int piece){
+		if (downloadedTorrentPieces.containsKey(torrent)){
+			List<Integer> list = downloadedTorrentPieces.get(torrent);
+			list.add(piece);
+		}
+		else { //torrent not in the list yet
+			List<Integer> newList = new ArrayList<Integer>();
+			newList.add(piece);
+			downloadedTorrentPieces.put(torrent, newList);
+		}
+	}
+	
+	public boolean findTorrentPiece(Torrent torrent, int piece){
+		if (downloadedTorrentPieces.containsKey(torrent)){
+			List<Integer> list = downloadedTorrentPieces.get(torrent);
+			if (list.contains(piece)){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void addDownloadedTorrentPiecesList(Torrent torrent, List<Integer> pieceList){
+		
 	}
 	
 	public InetSocketAddress getInetSocketAddress(){

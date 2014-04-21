@@ -65,6 +65,10 @@ public class Client {
 		return this.id;
 	}
 	
+	public Peer getPeer(){
+		return this.peer;
+	}
+	
 	public ConnectionListener getService(){
 		return this.service;
 	}
