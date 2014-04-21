@@ -136,7 +136,9 @@ public class App {
 								}
 								else {
 									System.out.println("Go go go");
-									piece += file.getPieces();
+									
+									
+									//piece += file.getPieces();
 									//piece += 1;
 								}
 							}
