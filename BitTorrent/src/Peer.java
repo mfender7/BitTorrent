@@ -19,10 +19,17 @@ public class Peer {
 	private String hexPeerId;
 	private String ip;
 	private int port;
-	private boolean interested;
-	private boolean choked;
 	private Socket socket;
 	private Map<Torrent, List<Integer>> downloadedTorrentPieces;
+	
+	/*am_choking: this client is choking the peer
+am_interested: this client is interested in the peer
+peer_choking: peer is choking this client
+peer_interested: peer is interested in this client*/
+	private boolean am_choking;
+	private boolean am_interested;
+	private boolean peer_choking;
+	private boolean peer_interested;
 
 
 	public Peer(String ip, int port, ByteBuffer peerId) {
@@ -35,6 +42,11 @@ public class Peer {
 		
 		this.peerId = peerId;
 		this.hexPeerId = Torrent.byteArrayToHexString(peerId.array()); // ?
+		
+		am_choking = true;
+		am_interested = false;
+		peer_choking = true;
+		peer_interested = false;
 	}
 
 
@@ -45,6 +57,31 @@ public class Peer {
 				this.address.getPort());  // ?
 	}
 	
+	public void setAm_choking(boolean b){
+		this.am_choking=b;
+	}
+	public void setAm_interested(boolean b){
+		this.am_interested=b;
+	}
+	public void setPeer_choking(boolean b){
+		this.peer_choking=b;
+	}
+	public void setPeer_interested(boolean b){
+		this.peer_interested=b;
+	}
+	public boolean getAm_choking(){
+		return this.am_choking;
+	}
+	public boolean getAm_interested(){
+		return this.am_interested;
+	}
+	public boolean getPeer_choking(){
+		return this.peer_choking;
+	}
+	public boolean getPeer_interested(){
+		return this.peer_interested;
+	}
+
 	public void addDownloadedTorrentPiece(Torrent torrent, int piece){
 		if (downloadedTorrentPieces.containsKey(torrent)){
 			List<Integer> list = downloadedTorrentPieces.get(torrent);

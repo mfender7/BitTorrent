@@ -63,9 +63,10 @@ public class TorrentFile {
 			PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
 			if(mes.getMessageID() == 5){
 				//Bitfield, so we need to read in the next HAVE message
-				System.out.println("BITFIELD, READING IMMINENT HAVE");	
+				System.out.println("BITFIELD, READING IMMINENT HAVE... or unchoke... or choke");	
 				buffer = PeerMessage.parseHeader(is);
 				mes = new PeerMessage(buffer, this, this.self, socket);
+				//we need to loop here to actually get stuff
 			}
 			else{
 				System.out.println("JUST HAVE");
@@ -77,6 +78,7 @@ public class TorrentFile {
 			//write/send stuff
 			buffer.clear();
 			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
+			this.self.setPeer_choking(false); //no longer choking peer
 			os.write(buffer.array());
 			System.out.println(socket.isClosed());
 			is = socket.getInputStream();
@@ -180,9 +182,9 @@ public class TorrentFile {
 		public PeerMessage(){ }
 		
 		public static ByteBuffer parseHeader(InputStream stream) throws IOException {
-			byte[] length = new byte[5];
+			byte[] length = new byte[4];
 			int r = stream.read(length, 0, length.length);
-			System.out.println("read " + r);
+			System.out.println("first # of bytes read (header) " + r);
 			ByteBuffer buffer = ByteBuffer.wrap(length);
 
 			/*//int len = ByteBuffer.wrap(length).getInt();
@@ -196,17 +198,13 @@ public class TorrentFile {
 			int len = buffer.getInt();
 			if(len == 0 && r != -1)
 				return parseHeader(stream);
-			int mi = buffer.get();
-			byte[] body = new byte[1];
-			if(len > 0){
-				body = new byte[len - 1];
-				r = stream.read(body, 0, len - 1);
-				System.out.println("read " + r);
-				buffer = ByteBuffer.allocate(4 + len);
-				buffer.put(length);
-				buffer.put(body);
-			}
-
+			//int mi = buffer.get();
+			byte[] body = new byte[len];
+			r = stream.read(body);
+			System.out.println("# of bytes read " + r);
+			buffer = ByteBuffer.allocate(4 + len);
+			buffer.put(length);
+			buffer.put(body);
 			return buffer;
 		}
 		
@@ -220,7 +218,7 @@ public class TorrentFile {
 			//payload = new byte[length]; //get that payload ready
 			this.payload = new byte[length - 1];
 			message.get(payload); //put the payload stuff into its own array, dang it
-			if(messageID >= Type.HAVE.getType()) {
+			if(messageID >= -1 && messageID <= 8) {
 				parse(message, file, self, s);
 			}
 		}
@@ -231,6 +229,20 @@ public class TorrentFile {
 			System.out.println(type);
 			ByteBuffer messageBuffer;
 			switch(type){
+				case KEEP_ALIVE:
+					break;
+				case CHOKE:
+					self.setPeer_choking(true);
+					break;
+				case UNCHOKE:
+					self.setPeer_choking(false);
+					break;
+				case INTERESTED:
+					self.setPeer_interested(true);
+					break;
+				case NOT_INTERESTED:
+					self.setPeer_interested(false);
+					break;
 				case HAVE:
 					System.out.println("THEY HAS SOMETHING");
 					ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
@@ -246,6 +258,7 @@ public class TorrentFile {
 								os = s.getOutputStream();
 								os.write(messageBuffer.array());
 								System.out.println("Interest message sent");
+								self.setAm_interested(true);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -277,7 +290,7 @@ public class TorrentFile {
 							int index = i * 8 + j;
 							if ((a & (0x10000000 >> j)) != 0){
 								indeces.add(index);
-								System.out.println("Added index: " + index);
+								//System.out.println("Added index: " + index);
 							}
 						}
 					}
@@ -288,7 +301,7 @@ public class TorrentFile {
 					
 					break;
 				case REQUEST:
-					
+					break;
 				case PIECE:
 					byte[] field = new byte[4];
 					message.get(field); //piece index!
@@ -303,7 +316,8 @@ public class TorrentFile {
 					blockOffset += 1;
 					
 					break;
-				case CANCEL:	
+				case CANCEL:
+					break;
 			}
 		}
 		
