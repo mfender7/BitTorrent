@@ -73,7 +73,7 @@ public class TorrentFile {
 					//let's send an interested? maybe? possibly? or unchoked?
 					///wait, that probably means they're interested *and* not choked. Su-weeet
 					p.setPeer_choking(false);
-					p.setPeer_interested(true);
+					p.setAm_interested(true);
 //					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), 0);
 //					os.write(buffer.array());
 				}
@@ -93,7 +93,7 @@ public class TorrentFile {
 					System.out.println("Choked message! Abandon ship!");
 					return null;
 				}
-				if(p.getPeer_interested() && !p.getPeer_choking())
+				if(p.getAm_interested() && !p.getPeer_choking())
 					return peer;
 			}
 		} catch (Exception ex){
