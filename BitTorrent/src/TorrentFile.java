@@ -26,8 +26,9 @@ public class TorrentFile {
 	private Torrent torrent;
 	private File torrentFile;
 	private Map<Integer, TorrentFilePart> torrentParts;
-	private Peer peer;
+	private List<Peer> peerList;
 	private Peer self;
+	private Peer currentPeer;
 	
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -38,8 +39,12 @@ public class TorrentFile {
 		this.fileSize = torrent.getSize();
 		this.offset = 0L;
 		this.pieces = (int)Math.ceil((double)this.fileSize / this.pieceLength) + 1;
-		this.peer = peer;
 		this.self = client.getPeer();
+		this.peerList = new ArrayList<Peer>();
+	}
+	
+	public Torrent getTorrent(){
+		return this.torrent;
 	}
 	
 	public int getPieces(){
@@ -47,14 +52,39 @@ public class TorrentFile {
 		return pieces;
 	}
 	
+	public List<Peer> getPeerList(){
+		return this.peerList;
+	}
+	
+	public void addToPeerList(Peer p){
+		if (!this.peerList.contains(p)){
+			this.peerList.add(p);
+		}
+	}
+	
+	public Peer getCurrentPeer(){
+		return this.currentPeer;
+	}
+	
+	public void setCurrentPeer(Peer p){
+		this.currentPeer = p;
+	}
+	
 	public int getPiecesFromPeer(){
 		//here get all pieces from peer that we can/need
+		//for each piece that the peer has
+		//if self(peer) doesn't have it
+		//request it if unchoked
 		System.out.println("need to implement torrentfile.getpiecesfrompeer?");
 		return 0;
 	}
 
+	/*in here we need to add the established peer to the list and set it as the currentpeer
+	 * */
 	public Socket establishPeer(Peer p){
 		try{ 
+			this.addToPeerList(p); //add it here?
+			this.currentPeer = p;
 			Socket socket = p.getSocket();
 			InputStream is = socket.getInputStream();
 			//first let's get dat bitfield...
@@ -292,7 +322,7 @@ public class TorrentFile {
 					System.out.println(new String(Hex.encodeHex(payload)));
 					System.out.println(new String(Hex.encodeHex(payload)).length());
 					BitSet bitfield = new BitSet(payload.length);
-					List<Integer> indeces = new ArrayList<Integer>();
+					List<Integer> indices = new ArrayList<Integer>();
 					for(int i = 0; i < message.remaining()*8; i++){
 						if ((message.get(i/8) & (1 << (7 -(i % 8)))) > 0){
 							//indeces.add(i);
@@ -308,11 +338,12 @@ public class TorrentFile {
 						for(int j = 0; j < 8; j++){
 							int index = i * 8 + j;
 							if ((a & (0x10000000 >> j)) != 0){
-								indeces.add(index);
+								indices.add(index);
 								//System.out.println("Added index: " + index);
 							}
 						}
 					}
+					file.getCurrentPeer().addDownloadedTorrentPiecesList(file.getTorrent(), indices);
 
 					System.out.println("Bitfield bullshit");
 					

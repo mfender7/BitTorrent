@@ -76,7 +76,7 @@ public class ConnectionListener implements Runnable {
              //logger.warn("{}", se);
              this.stop();
 		 }
-
+/*
 		 while (!this.stop) {
              try {
                  this.accept();
@@ -92,7 +92,7 @@ public class ConnectionListener implements Runnable {
              } catch (InterruptedException ie) {
                      // Ignore
              }
-		 }
+		 }*/
 
 		 try {
              this.ssocket.close();
