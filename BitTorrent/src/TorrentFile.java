@@ -172,16 +172,18 @@ public class TorrentFile {
 			System.out.println("read " + r);
 			ByteBuffer buffer = ByteBuffer.wrap(length);
 			int len = buffer.getInt();
-			if(len < 0)
-				len = ~len;
+			if(len == 0)
+				return parseHeader(stream);
 			int mi = buffer.get();
-			if(mi < 0)
-				mi = ~mi;
-			byte[] body = new byte[len];
-			r = stream.read(body, 1, len - 1);
-			System.out.println("read " + r);
-			buffer = ByteBuffer.allocate(5 + len);
-			buffer.put(length).put(body);
+			byte[] body = new byte[1];
+			if(len > 0){
+				body = new byte[len - 1];
+				r = stream.read(body, 0, len - 1);
+				System.out.println("read " + r);
+				buffer = ByteBuffer.allocate(4 + len);
+				buffer.put(length);
+				buffer.put(body);
+			}
 			return buffer;
 		}
 		
@@ -206,6 +208,7 @@ public class TorrentFile {
 				case HAVE:
 					//payload is a number denoting the index of a piece 
 					//that the peer has successfully downloaded and validated
+					message.get(payload);
 					System.out.println("THEY HAS SOMETHING");
 					break;
 				case BITFIELD:
