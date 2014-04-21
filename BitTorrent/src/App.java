@@ -136,7 +136,8 @@ public class App {
 								}
 								else {
 									System.out.println("Go go go");
-									
+									//REQUEST SHIT
+									file.getPiecesFromPeer();
 									
 									//piece += file.getPieces();
 									//piece += 1;
