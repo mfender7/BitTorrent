@@ -77,15 +77,18 @@ public class TorrentFile {
 			OutputStream os = socket.getOutputStream();
 			//write/send stuff
 			buffer.clear();
-			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType());
+			buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);
 			this.self.setPeer_choking(false); //no longer choking peer
 			os.write(buffer.array());
 			System.out.println(socket.isClosed());
 			is = socket.getInputStream();
 			//System.out.println(is.read());
-			buffer.clear();
-			buffer = PeerMessage.parseHeader(is);
-			PeerMessage mess = new PeerMessage(buffer, this, this.self, socket);
+			while (true){
+				buffer.clear();
+				buffer = PeerMessage.parseHeader(is);
+				new PeerMessage(buffer, this, this.self, socket);
+				if (self.getPeer_choking()){ break; } //go find another peer if it starts choking us. jerk.
+			}
 			//interested message
 //			buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
 //			os.write(buffer.array(), 0, buffer.array().length);
@@ -177,13 +180,14 @@ public class TorrentFile {
 		private int blockOffset;
 		private int blockOther;
 		private Torrent torrent;
+		private int piece;
 		
 		
 		public PeerMessage(){ }
 		
 		public static ByteBuffer parseHeader(InputStream stream) throws IOException {
 			byte[] length = new byte[4];
-			int r = stream.read(length, 0, length.length);
+			int r = stream.read(length, 0, length.length);  //something hanging here when calling from while loop
 			System.out.println("first # of bytes read (header) " + r);
 			ByteBuffer buffer = ByteBuffer.wrap(length);
 
@@ -196,8 +200,10 @@ public class TorrentFile {
 			buffer.put(length).put(body);*/
 			
 			int len = buffer.getInt();
-			if(len == 0 && r != -1)
+			if(len == 0 && r != -1) {//wat is this
+				System.out.println("calling parseHeader w/in parseHeader");
 				return parseHeader(stream);
+			}
 			//int mi = buffer.get();
 			byte[] body = new byte[len];
 			r = stream.read(body);
@@ -247,13 +253,14 @@ public class TorrentFile {
 					System.out.println("THEY HAS SOMETHING");
 					ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
 					int piece = payloadBuff.getInt();
+					OutputStream os;
 					//validate index
 					if (piece >= 0 && piece < file.getPieces()){
 						if (!self.findTorrentPiece(file.torrent, piece)){
 							//send interested message
-							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType());
+							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 							//os.write(buffer.array(), 0, buffer.array().length);
-							OutputStream os;
+							
 							try {
 								os = s.getOutputStream();
 								os.write(messageBuffer.array());
@@ -263,8 +270,20 @@ public class TorrentFile {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
-							
-							//maybe send a request message
+							if (!self.getPeer_choking()){ //not being choked by peer, request piece
+								//send a request message
+								messageBuffer.clear();
+								messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), piece);
+								try {
+									os = s.getOutputStream();
+									os.write(messageBuffer.array());
+									System.out.println("Request message sent");
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+
 						}
 					}
 					break;
@@ -333,7 +352,7 @@ public class TorrentFile {
 			return payload;
 		}
 		
-		public ByteBuffer sendMessage(int id){
+		public ByteBuffer sendMessage(int id, int piece){
 			Type type = Type.get(id);
 			switch(type){
 				case CHOKE:
@@ -351,7 +370,7 @@ public class TorrentFile {
 				case BITFIELD:
 					return sendBitfield();
 				case REQUEST:
-					return sendRequest();
+					return sendRequest(piece);
 				case PIECE:
 					return sendPiece();
 				case CANCEL:
@@ -403,29 +422,31 @@ public class TorrentFile {
 			return craft();
 		}
 		
-		private ByteBuffer sendPiece(){
+		private ByteBuffer sendBitfield(){
 			length = 0;
 			messageID = 5;
 			return craft();
 		}
 		
-		private ByteBuffer sendCancel(){
-			length = 0;
+		private ByteBuffer sendRequest(int piece){
+			length = 12; //payload length 12
 			messageID = 6;
+			piece = piece;
 			return craft();
 		}
 		
-		private ByteBuffer sendRequest(){
+		private ByteBuffer sendPiece(){
 			length = 0;
 			messageID = 7;
 			return craft();
 		}
 		
-		private ByteBuffer sendBitfield(){
+		private ByteBuffer sendCancel(){
 			length = 0;
-			messageID = 4;
+			messageID = 8;
 			return craft();
 		}
+
 	}
 	
 }
