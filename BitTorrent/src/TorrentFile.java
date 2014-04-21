@@ -79,6 +79,10 @@ public class TorrentFile {
 		return 0;
 	}
 
+	
+//	1) send handshake, 2) receive handshake 3) receive bitfield 4) send unchoke 
+//	5) receive unchoke 6) send interested and request for some pieces
+	
 	/*in here we need to add the established peer to the list and set it as the currentpeer
 	 * */
 	public Peer establishPeer(Peer p){
@@ -102,10 +106,10 @@ public class TorrentFile {
 					System.out.println("JUST HAVE");
 					//let's send an interested? maybe? possibly? or unchoked?
 					///wait, that probably means they're interested *and* not choked. Su-weeet
-					p.setPeer_choking(false);
-					p.setAm_interested(true);
-//					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), 0);
-//					os.write(buffer.array());
+//					p.setPeer_choking(false);
+//					p.setAm_interested(true);
+					buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
+					os.write(buffer.array());
 				}
 				else if(mes.getMessageID() == 3){
 					System.out.println("That meanie face peer isn't interested in us. Hmph. We'll go find another peer.");
@@ -128,6 +132,7 @@ public class TorrentFile {
 			}
 		} catch (Exception ex){
 			System.out.println("Shit happened.");
+			ex.printStackTrace();
 		}
 		return null;
 	}
@@ -212,6 +217,8 @@ public class TorrentFile {
 		private int blockOther;
 		private Torrent torrent;
 		private int piece;
+		public static final int REQUEST_SIZE = 16384;
+		
 		
 		
 		public PeerMessage(){ }
@@ -231,10 +238,10 @@ public class TorrentFile {
 			buffer.put(length).put(body);*/
 			
 			int len = buffer.getInt();
-			if(len == 0 && r != -1) {//wat is this
-				System.out.println("calling parseHeader w/in parseHeader");
-				return parseHeader(stream);
-			}
+//			if(len == 0 && r != -1) {//wat is this
+//				System.out.println("calling parseHeader w/in parseHeader");
+//				return parseHeader(stream);
+//			}
 			//int mi = buffer.get();
 			byte[] body = new byte[len];
 			r = stream.read(body);
@@ -484,9 +491,10 @@ public class TorrentFile {
 		}
 		
 		private ByteBuffer sendRequest(int piece){
-			length = 12; //payload length 12
+			length = 13; //payload length 12
 			messageID = 6;
 			this.piece = piece;
+			this.payload = new byte[length];
 			return craft();
 		}
 		
