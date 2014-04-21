@@ -75,7 +75,21 @@ public class TorrentFile {
 		//for each piece that the peer has
 		//if self(peer) doesn't have it
 		//request it if unchoked
-		System.out.println("need to implement torrentfile.getpiecesfrompeer?");
+		Map<Torrent, List<Integer>> currentPeerPieces = currentPeer.getDownloadedTorrentPiecesList();
+		Map<Torrent, List<Integer>> selfPieces = self.getDownloadedTorrentPiecesList();
+		List<Integer> list = currentPeerPieces.get(this.torrent);
+		for (int i : list){
+			if (!selfPieces.get(this.torrent).contains(i)){
+				//REQUEST IT
+				//assume we're unchoked
+				//overload sendmessge so we can handle REQUEST messages and their offsets. TODO FOR THE SILLY ONE.
+				ByteBuffer messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i);
+				//need to loop thorugh every offset in the piece.
+				//add piece to list of downloaded.
+				//rinse and repeat
+			}
+		}
+		//System.out.println("need to implement torrentfile.getpiecesfrompeer?");
 		return 0;
 	}
 

@@ -119,6 +119,10 @@ peer_interested: peer is interested in this client*/
 		}
 	}
 	
+	public Map<Torrent, List<Integer>> getDownloadedTorrentPiecesList(){
+		return this.downloadedTorrentPieces;
+	}
+	
 	public InetSocketAddress getInetSocketAddress(){
 		return this.address;
 	}
