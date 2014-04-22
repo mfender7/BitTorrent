@@ -118,7 +118,13 @@ public class App {
 							} else {
 								System.out.println("Go go go");
 								// REQUEST SHIT
-								file.getPiecesFromPeer();
+								int i = file.getPiecesFromPeer();
+								if (i==0){System.out.println("well, shit.");}
+								else {
+									//combine the pieces
+									System.out.println("we should combine now!");
+								}
+								
 							}
 						} else
 							System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", peerIndex + 1, peers.size()));

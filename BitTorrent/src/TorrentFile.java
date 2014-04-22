@@ -28,6 +28,7 @@ public class TorrentFile {
 	private Peer self;
 	private Peer currentPeer;
 	private List<Integer> indices;
+	private int recentlyAnnouncedIndex;
 
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -44,6 +45,15 @@ public class TorrentFile {
 		this.peerList = new ArrayList<Peer>();
 		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
 		this.indices = new ArrayList<Integer>();
+		this.recentlyAnnouncedIndex = -1;
+	}
+	
+	public int getRecentlyAnnouncedIndex(){
+		return this.recentlyAnnouncedIndex;
+	}
+	
+	public void setRecentlyAnnouncedIndex(int i){
+		this.recentlyAnnouncedIndex = i;
 	}
 
 	public Torrent getTorrent() {
@@ -53,7 +63,7 @@ public class TorrentFile {
 	public boolean weAreDone() {
 		for (int i = 0; i < pieces; i++)
 			if (!torrentParts.containsKey(i)
-					|| (torrentParts.containsKey(i) && torrentParts.get(i)
+					|| (torrentParts.containsKey(i) && !torrentParts.get(i)
 							.isComplete()))
 				return false;
 		return true;
@@ -120,11 +130,32 @@ public class TorrentFile {
 					System.out.println("request sent for piece index " + i + " at offset " + offset);
 					buffer = PeerMessage.parseHeader(is);
 					if (buffer.capacity() > 0) { //I don't like reading negative bits....
+						/*if (buffer.getInt()==0){
+							//KEEP ALIVE
+							System.out.println("keep alive detected");
+							continue;
+						}*/
+						/*if (buffer.remaining()<5){
+							continue;
+						}*/
 						int mid = buffer.get(4); //but then this will kill it if we don't have 5 bytes. but I also don't want it looping forever..
-						if (mid == 7) {
+						if (mid == 4){
+							//got a damned have, request the piece it's telling us about
+							PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket);
+							int derp = this.getRecentlyAnnouncedIndex();
+							if (derp!=-1){
+								buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), derp, offset);
+								os.write(buffer.array());
+								System.out.println("request sent for piece index " + derp + " at offset " + offset);
+							}
+						}
+						else if (mid == 7) {
 							PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket); //parse out the payload
 							part.add(pm.getPayload(), offset); //add the piece[offset] to our TorrentFilePart map
 							offset += PeerMessage.REQUEST_SIZE;
+						}
+						else {
+							System.out.println("wtf");
 						}
 					}
 					//also, fuck skipping around offsets. we're brute-forcing each piece, whether we like it or not.
