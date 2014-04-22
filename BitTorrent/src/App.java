@@ -105,7 +105,8 @@ public class App {
 				//wasn't doing anything useful. especially since we loop through all files
 				//in getPiecesFromPeer
 				int peerIndex = 0;
-				while (peerIndex < peers.size()) {
+				boolean done = false;
+				while (peerIndex < peers.size() && !done) {
 					try {
 						System.out.println(String.format("Trying Peer[%d/%d]", peerIndex + 1, peers.size()));
 						Peer p = peers.get(peerIndex);
@@ -128,7 +129,9 @@ public class App {
 									//combine the pieces
 									TorrentFileCreator fc = new TorrentFileCreator(file);
 									fc.makeZeFile(file.torrentParts);
-									System.out.println("we should combine now!");
+									System.out.println("File created!");
+									done = true;
+									break;
 								}
 								
 							}
@@ -144,17 +147,7 @@ public class App {
 						peerIndex = 0;
 					}
 				}
-
-				Peer p = peers.get(0);
-				Peer connected = client.getService().connect(p);
-
-				if (connected != null) {
-					System.out.println("ID! " + connected.getPeerId().array());
-
-				} else {
-					System.out
-							.println("Something didn't come back like we wanted it to...");
-				}
+				
 			} else if (params.containsKey("info_hash"))
 				System.out.println("Info hash maybe?");
 			else
