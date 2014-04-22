@@ -146,6 +146,7 @@ public class App {
 							else
 								System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", i + 1, peers.size()));
 						} catch (Exception ex){
+							ex.printStackTrace();
 							System.out.println("Peer index " + i);
 							System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
 						}
