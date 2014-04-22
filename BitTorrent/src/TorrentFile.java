@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +41,7 @@ public class TorrentFile {
 		this.pieces = (int)Math.ceil((double)this.fileSize / this.pieceLength) + 1;
 		this.self = client.getPeer();
 		this.peerList = new ArrayList<Peer>();
+		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
 	}
 	
 	public Torrent getTorrent(){
@@ -70,23 +71,32 @@ public class TorrentFile {
 		this.currentPeer = p;
 	}
 	
-	public int getPiecesFromPeer(){
+	public int getPiecesFromPeer() throws IOException{
 		//here get all pieces from peer that we can/need
 		//for each piece that the peer has
 		//if self(peer) doesn't have it
 		//request it if unchoked
 		Map<Torrent, List<Integer>> currentPeerPieces = currentPeer.getDownloadedTorrentPiecesList();
-		Map<Torrent, List<Integer>> selfPieces = self.getDownloadedTorrentPiecesList();
+		//Map<Torrent, List<Integer>> selfPieces = self.getDownloadedTorrentPiecesList();
+		Socket socket = this.currentPeer.getSocket();
+		OutputStream os = socket.getOutputStream();
+		InputStream is = socket.getInputStream();
 		List<Integer> list = currentPeerPieces.get(this.torrent);
 		for (int i : list){
-			if (!selfPieces.get(this.torrent).contains(i)){
+			if (!torrentParts.containsKey(i)){
 				//REQUEST IT
+				int offset = 0;
+				
 				//assume we're unchoked
 				//overload sendmessge so we can handle REQUEST messages and their offsets. TODO FOR THE SILLY ONE.
-				ByteBuffer messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i);
+				ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
+				os.write(buffer.array());
+				buffer = PeerMessage.parseHeader(is);
+				
 				//need to loop thorugh every offset in the piece.
 				//add piece to list of downloaded.
 				//rinse and repeat
+				offset += PeerMessage.REQUEST_SIZE;
 			}
 		}
 		//System.out.println("need to implement torrentfile.getpiecesfrompeer?");
@@ -120,10 +130,10 @@ public class TorrentFile {
 					System.out.println("JUST HAVE");
 					//let's send an interested? maybe? possibly? or unchoked?
 					///wait, that probably means they're interested *and* not choked. Su-weeet
-//					p.setPeer_choking(false);
-//					p.setAm_interested(true);
-					buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
-					os.write(buffer.array());
+					p.setPeer_choking(false);
+					p.setAm_interested(true);
+					//buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);
+					//os.write(buffer.array());
 				}
 				else if(mes.getMessageID() == 3){
 					System.out.println("That meanie face peer isn't interested in us. Hmph. We'll go find another peer.");
@@ -136,12 +146,9 @@ public class TorrentFile {
 				else if(mes.getMessageID() == 1){
 					p.setPeer_choking(false);
 					System.out.println("Unchoked!");
-<<<<<<< HEAD
-=======
 					buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 					os.write(buffer.array());
 					p.setAm_interested(true);
->>>>>>> 279fc0c... stuff
 				}
 				else if (mes.getMessageID() == 0){
 					System.out.println("Choked message! Abandon ship!");
@@ -175,6 +182,7 @@ public class TorrentFile {
 		}
 		
 	}
+<<<<<<< HEAD
 	
 	private static class TorrentFilePart{
 		
@@ -520,4 +528,6 @@ public class TorrentFile {
 
 	}
 	
+=======
+>>>>>>> 77870d8... Separated classes. In-progress request message sent.
 }
