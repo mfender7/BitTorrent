@@ -23,7 +23,7 @@ public class TorrentFile {
 	private FileChannel channel;
 	private Torrent torrent;
 	private File torrentFile;
-	private Map<Integer, TorrentFilePart> torrentParts;
+	public Map<Integer, TorrentFilePart> torrentParts;
 	private List<Peer> peerList;
 	private Peer self;
 	private Peer currentPeer;
@@ -164,6 +164,7 @@ public class TorrentFile {
 				System.out.println("I think we're finally done...");
 			}
 		}
+		System.out.println(".....are we?");
 		//our check to see if we need to download anymore pieces
 		if (weAreDone()) {
 			return 1;

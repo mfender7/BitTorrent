@@ -83,8 +83,7 @@ public class App {
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();
-			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0)
-					.get(0), torrent, client);
+			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0).get(0), torrent, client);
 			System.out.println(announce);
 			// send announce get request
 			URLConnection connection = announce.openConnection();
@@ -117,11 +116,16 @@ public class App {
 								continue;
 							} else {
 								System.out.println("Go go go");
-								// REQUEST SHIT
+								//COMBINE SHIT
+								if(file.weAreDone()){
+									
+								}
 								int i = file.getPiecesFromPeer();
 								if (i==0){System.out.println("well, shit.");}
 								else {
 									//combine the pieces
+									TorrentFileCreator fc = new TorrentFileCreator(file);
+									fc.makeZeFile(file.torrentParts);
 									System.out.println("we should combine now!");
 								}
 								
