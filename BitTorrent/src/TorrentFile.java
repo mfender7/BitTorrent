@@ -92,6 +92,7 @@ public class TorrentFile {
 				ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
 				os.write(buffer.array());
 				buffer = PeerMessage.parseHeader(is);
+				PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
 				
 				//need to loop thorugh every offset in the piece.
 				//add piece to list of downloaded.

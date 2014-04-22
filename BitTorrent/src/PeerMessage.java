@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
@@ -177,6 +178,7 @@ public class PeerMessage {
 			case REQUEST:
 				break;
 			case PIECE:
+				System.out.println("I GOT A PIECE");
 				byte[] field = new byte[4];
 				message.get(field); //piece index!
 				if(index == ByteBuffer.wrap(field).getInt())
@@ -249,7 +251,7 @@ public class PeerMessage {
 		ByteBuffer buffer = ByteBuffer.allocate(4 + length);
 		buffer.rewind();
 		buffer.putInt(length);
-		//buffer.put((byte)messageID);
+		buffer.put((byte)messageID);
 		if(length > 1){				
 			buffer.put(payload);
 		}
@@ -298,14 +300,15 @@ public class PeerMessage {
 		length = 13; //payload length 12
 		messageID = 6;
 		//this.piece = piece;
-		this.payload = new byte[length];
-		ByteBuffer buf = ByteBuffer.allocate(length);
+		this.payload = new byte[length-1];
+		ByteBuffer buf = ByteBuffer.allocate(length-1);
 		//buf.putInt(length);
-		buf.put((byte)messageID);
+		//buf.put((byte)messageID);
 		buf.putInt(piece);
 		buf.putInt(this.blockOffset);
 		buf.putInt(this.REQUEST_SIZE);
 		this.payload = buf.array();
+		//System.out.println("in sendRequest payload: "+Arrays.toString(payload));
 		return craft();
 	}
 	
