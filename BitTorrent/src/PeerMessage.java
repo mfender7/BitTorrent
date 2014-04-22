@@ -58,24 +58,23 @@ public class PeerMessage {
 	
 	public static ByteBuffer parseHeader(InputStream stream) throws IOException {
 		byte[] length = new byte[4];
-		int r = stream.read(length, 0, length.length);  //something hanging here when calling from while loop
-		//System.out.println("first # of bytes read (header) " + r);
+		int r = stream.read(length, 0, length.length);
+		/*while (r < 4){
+			r+= stream.read(length, r, 4-r);
+		}*/
 		ByteBuffer buffer = ByteBuffer.wrap(length);
 		int len = buffer.getInt();
-		System.out.println("first # of bytes read (header) " + r + "expected length: " + len);
+		System.out.println("first # of bytes read (header) " + r + " expected length: " + len);
 		if (r == 0) {
 			return buffer;
 		}
-		if (r == -1){
-			parseHeader(stream);
-		}
 		byte[] body = new byte[len];
 		r = stream.read(body);
-		System.out.println("# of bytes read " + r);
 		while (r < len){
 			r+= stream.read(body, r, len-r);
-			System.out.println("# of bytes read " + r);
+			//System.out.println("# of bytes read " + r);
 		}
+		System.out.println("# of bytes read " + r);
 		buffer = ByteBuffer.allocate(4 + len);
 		buffer.put(length);
 		buffer.put(body);
@@ -129,6 +128,7 @@ public class PeerMessage {
 						//YEAH, FUCK YOU TOO
 						file.addIndexToIndices(piece);
 					}
+					file.setRecentlyAnnouncedIndex(piece);
 					/*if (!self.findTorrentPiece(file.torrent, piece)){
 						//send interested message
 						messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
