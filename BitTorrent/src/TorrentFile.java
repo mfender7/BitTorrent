@@ -29,6 +29,7 @@ public class TorrentFile {
 	private List<Peer> peerList;
 	private Peer self;
 	private Peer currentPeer;
+	private List<Integer> indices;
 	
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -42,6 +43,7 @@ public class TorrentFile {
 		this.self = client.getPeer();
 		this.peerList = new ArrayList<Peer>();
 		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
+		this.indices = new ArrayList<Integer>();
 	}
 	
 	public Torrent getTorrent(){
@@ -51,6 +53,10 @@ public class TorrentFile {
 	public int getPieces(){
 		
 		return pieces;
+	}
+	
+	public void addIndexToIndices(int i){
+		this.indices.add(i);
 	}
 	
 	public List<Peer> getPeerList(){
@@ -91,15 +97,30 @@ public class TorrentFile {
 				//overload sendmessge so we can handle REQUEST messages and their offsets. TODO FOR THE SILLY ONE.
 				ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
 				os.write(buffer.array());
-				buffer = PeerMessage.parseHeader(is);
-				PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
+				System.out.println("request sent for piece index "+i);
 				
-				//need to loop thorugh every offset in the piece.
-				//add piece to list of downloaded.
-				//rinse and repeat
-				offset += PeerMessage.REQUEST_SIZE;
+				//problem here TODO
+				//we get choked: how to move on?
+				//we get a HAVE message: causes concurrentmodificationexception
+				buffer = PeerMessage.parseHeader(is);
+				if (buffer.remaining()>=5){
+					if ((buffer.get(4)==0) || (buffer.get(4)==5)){
+						return 0; //man, fuck this
+					}
+				
+					if (buffer.get(4)==7){
+						PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
+						offset += PeerMessage.REQUEST_SIZE;
+				
+						//need to loop through every offset in the piece.
+						//add piece to list of downloaded.
+						//rinse and repeat TODO
+				}
+				}
 			}
 		}
+		//Here add into the downloadedTorrentPieces the indices received from peer while going through
+		//the for loop
 		//System.out.println("need to implement torrentfile.getpiecesfrompeer?");
 		return 0;
 	}

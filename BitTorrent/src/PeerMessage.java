@@ -124,7 +124,9 @@ public class PeerMessage {
 				if (piece >= 0 && piece < file.getPieces()){
 					/*if not in currentPeer's list, add it*/
 					if (!file.getCurrentPeer().findTorrentPiece(file.getTorrent(), piece)){
-						file.getCurrentPeer().addDownloadedTorrentPiece(file.getTorrent(), piece);
+						//file.getCurrentPeer().addDownloadedTorrentPiece(file.getTorrent(), piece);
+						//YEAH, FUCK YOU TOO
+						file.addIndexToIndices(piece);
 					}
 					/*if (!self.findTorrentPiece(file.torrent, piece)){
 						//send interested message
@@ -137,7 +139,6 @@ public class PeerMessage {
 							System.out.println("Interest message sent");
 							self.setAm_interested(true);
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						
@@ -152,7 +153,6 @@ public class PeerMessage {
 								os.write(messageBuffer.array());
 								System.out.println("Request message sent");
 							} catch (IOException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
@@ -194,7 +194,9 @@ public class PeerMessage {
 					if (blockOffset == ByteBuffer.wrap(blockOffsetFromMess).getInt()){
 						//int blockOffsetInt = ByteBuffer.wrap(blockOffset).getInt();
 						byte[] dataBlock = new byte[lengthInt-9];
-						message.get(dataBlock); //create torrentfilepart?
+						message.get(dataBlock); 
+						//create torrentfilepart?
+						//need to add this datablock to a something TODO
 					}
 				};	
 				break;
