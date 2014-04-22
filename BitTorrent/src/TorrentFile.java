@@ -77,6 +77,11 @@ public class TorrentFile {
 		this.currentPeer = p;
 	}
 	
+	public void addTorrentPart(int piece, TorrentFilePart part){
+		if(torrentParts.containsKey(piece))
+			torrentParts.put(piece, part);
+	}
+	
 	public int getPiecesFromPeer() throws IOException{
 		//here get all pieces from peer that we can/need
 		//for each piece that the peer has
@@ -92,31 +97,29 @@ public class TorrentFile {
 			if (!torrentParts.containsKey(i)){
 				//REQUEST IT
 				int offset = 0;
+				TorrentFilePart part = new TorrentFilePart(this, i, offset, pieceLength);
+				while(offset < pieceLength){
+					//assume we're unchoked
+					//overload sendmessge so we can handle REQUEST messages and their offsets. TODO FOR THE SILLY ONE.
+					ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
+					os.write(buffer.array());
+					System.out.println("request sent for piece index "+i);
+					
+					//problem here TODO
+					//we get choked: how to move on?
+					//we get a HAVE message: causes concurrentmodificationexception
+					buffer = PeerMessage.parseHeader(is);
+					int mid = buffer.get(4);
+					PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket);
+					//split out payload, add to map
+					part.add(pm.getPayload(), offset);
+					//need to loop through every offset in the piece.
+					//add piece to list of downloaded.
+					//rinse and repeat TODO
 				
-				//assume we're unchoked
-				//overload sendmessge so we can handle REQUEST messages and their offsets. TODO FOR THE SILLY ONE.
-				ByteBuffer buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
-				os.write(buffer.array());
-				System.out.println("request sent for piece index "+i);
-				
-				//problem here TODO
-				//we get choked: how to move on?
-				//we get a HAVE message: causes concurrentmodificationexception
-				buffer = PeerMessage.parseHeader(is);
-				if (buffer.remaining()>=5){
-					if ((buffer.get(4)==0) || (buffer.get(4)==5)){
-						return 0; //man, fuck this
-					}
-				
-					if (buffer.get(4)==7){
-						PeerMessage mes = new PeerMessage(buffer, this, this.self, socket);
-						offset += PeerMessage.REQUEST_SIZE;
-				
-						//need to loop through every offset in the piece.
-						//add piece to list of downloaded.
-						//rinse and repeat TODO
+					offset += PeerMessage.REQUEST_SIZE;
 				}
-				}
+				System.out.println("I think we're finally done...");
 			}
 		}
 		//Here add into the downloadedTorrentPieces the indices received from peer while going through
@@ -152,7 +155,7 @@ public class TorrentFile {
 					System.out.println("JUST HAVE");
 					//let's send an interested? maybe? possibly? or unchoked?
 					///wait, that probably means they're interested *and* not choked. Su-weeet
-					p.setPeer_choking(false);
+					//p.setPeer_choking(false);
 					p.setAm_interested(true);
 					//buffer = new PeerMessage().sendMessage(PeerMessage.Type.UNCHOKE.getType(), 0);
 					//os.write(buffer.array());
@@ -184,24 +187,5 @@ public class TorrentFile {
 			ex.printStackTrace();
 		}
 		return null;
-	}
-	
-	public void requestPiece(){
-		
-	}
-	
-	
-	public void downloadPiece(int piece, Peer p) throws IOException{
-		//Start off at offset 0 for any piece.
-		TorrentFilePart part = new TorrentFilePart(ByteBuffer.wrap(new byte[pieceLength]), 0);
-		//Connect to the peer again since it worked the last time.
-		Socket socket = new Socket();
-		socket.connect(p.getInetSocketAddress(), 3000);
-		//and nooooow we start pulling all the things...
-		boolean finished = false;
-		while(!finished){
-			
-		}
-		
 	}
 }

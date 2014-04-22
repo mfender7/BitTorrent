@@ -57,8 +57,6 @@ public class PeerMessage {
 	private byte[] payload;
 	private int index;
 	private int blockOffset;
-	private int blockOther;
-	private Torrent torrent;
 	private int piece;
 	public static final int REQUEST_SIZE = 16384;
 	
@@ -185,7 +183,6 @@ public class PeerMessage {
 				int lengthInt = ByteBuffer.wrap(payloadLength).getInt();
 				byte[] messageID = new byte[1];
 				message.get(messageID);
-				//int messageIDInt = ByteBuffer.wrap(messageID).getInt();
 				byte[] pieceIndex = new byte[4];
 				message.get(pieceIndex);
 				if(index == ByteBuffer.wrap(pieceIndex).getInt()) {
@@ -194,7 +191,8 @@ public class PeerMessage {
 					if (blockOffset == ByteBuffer.wrap(blockOffsetFromMess).getInt()){
 						//int blockOffsetInt = ByteBuffer.wrap(blockOffset).getInt();
 						byte[] dataBlock = new byte[lengthInt-9];
-						message.get(dataBlock); 
+						message.get(dataBlock);
+						this.payload = dataBlock;
 						//create torrentfilepart?
 						//need to add this datablock to a something TODO
 					}
