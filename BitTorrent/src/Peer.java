@@ -38,7 +38,7 @@ peer_interested: peer is interested in this client*/
 				this.address.getAddress(),
 				this.address.getPort());  // ?
 		this.port = port;
-		this.downloadedTorrentPieces = new HashMap();
+		this.downloadedTorrentPieces = new HashMap<Torrent, List<Integer>>();
 		
 		this.peerId = peerId;
 		this.hexPeerId = Torrent.byteArrayToHexString(peerId.array()); // ?
