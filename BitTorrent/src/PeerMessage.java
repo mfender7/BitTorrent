@@ -179,18 +179,24 @@ public class PeerMessage {
 				break;
 			case PIECE:
 				System.out.println("I GOT A PIECE");
-				byte[] field = new byte[4];
-				message.get(field); //piece index!
-				if(index == ByteBuffer.wrap(field).getInt())
-					System.out.println("Alright, go go go.");
-				field = new byte[4];
-				message.get(field);
-				if(blockOffset == ByteBuffer.wrap(field).getInt())
-					System.out.println("Yay, right offset!");
-				payload = new byte[length - 9];
-				message.get(payload);
-				blockOffset += 1;
-				
+				message.rewind();
+				byte[] payloadLength = new byte[4];
+				message.get(payloadLength);
+				int lengthInt = ByteBuffer.wrap(payloadLength).getInt();
+				byte[] messageID = new byte[1];
+				message.get(messageID);
+				//int messageIDInt = ByteBuffer.wrap(messageID).getInt();
+				byte[] pieceIndex = new byte[4];
+				message.get(pieceIndex);
+				if(index == ByteBuffer.wrap(pieceIndex).getInt()) {
+					byte[] blockOffsetFromMess = new byte[4];
+					message.get(blockOffsetFromMess);
+					if (blockOffset == ByteBuffer.wrap(blockOffsetFromMess).getInt()){
+						//int blockOffsetInt = ByteBuffer.wrap(blockOffset).getInt();
+						byte[] dataBlock = new byte[lengthInt-9];
+						message.get(dataBlock); //create torrentfilepart?
+					}
+				};	
 				break;
 			case CANCEL:
 				break;
