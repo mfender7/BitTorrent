@@ -118,11 +118,16 @@ public class App {
 								continue;
 							} else {
 								System.out.println("Go go go");
-								// REQUEST SHIT
+								//COMBINE SHIT
+								if(file.weAreDone()){
+									
+								}
 								int i = file.getPiecesFromPeer();
 								if (i==0){System.out.println("well, shit.");}
 								else {
 									//combine the pieces
+									TorrentFileCreator fc = new TorrentFileCreator(file);
+									fc.makeZeFile(file.torrentParts);
 									System.out.println("we should combine now!");
 								}
 								
@@ -135,8 +140,6 @@ public class App {
 						System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
 					}
 					peerIndex += 1;
-					if(peerIndex >= peers.size())
-						peerIndex = 0;
 				}
 
 				Peer p = peers.get(0);
@@ -146,7 +149,8 @@ public class App {
 					System.out.println("ID! " + connected.getPeerId().array());
 
 				} else {
-					System.out.println("Something didn't come back like we wanted it to...");
+					System.out
+							.println("Something didn't come back like we wanted it to...");
 				}
 			} else if (params.containsKey("info_hash"))
 				System.out.println("Info hash maybe?");

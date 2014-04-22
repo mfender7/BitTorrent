@@ -23,7 +23,7 @@ public class TorrentFile {
 	private FileChannel channel;
 	private Torrent torrent;
 	private File torrentFile;
-	private Map<Integer, TorrentFilePart> torrentParts;
+	public Map<Integer, TorrentFilePart> torrentParts;
 	private List<Peer> peerList;
 	private Peer self;
 	private Peer currentPeer;
@@ -180,7 +180,11 @@ public class TorrentFile {
 				System.out.println("I think we're finally done...");
 			}
 		}
+
 		this.inGetPiecesLoop = false;
+
+		System.out.println(".....are we?");
+		//our check to see if we need to download anymore pieces
 		if (this.indices.size() > 0){
 			for (int i : this.indices){
 				this.getCurrentPeer().addDownloadedTorrentPiece(this.torrent, i);
@@ -215,7 +219,7 @@ public class TorrentFile {
 					// Bitfield, so we need to read in the next HAVE message
 					System.out.println("Got a Bitfield message!");
 					//buffer = new PeerMessage().sendMessage(PeerMessage.Type.BITFIELD.getType(), 0);
-					//os.write(buffer.array());					
+					//os.write(buffer.array());
 				} else if (mes.getMessageID() == 4) {
 					System.out.println("JUST HAVE");
 					p.setPeer_choking(false);
@@ -223,11 +227,13 @@ public class TorrentFile {
 					//which then results in an unchoke.
 					p.setAm_interested(true);
 				} else if (mes.getMessageID() == 3) {
-					System.out.println("That meanie face peer isn't interested in us. Hmph. We'll go find another peer.");
+					System.out
+							.println("That meanie face peer isn't interested in us. Hmph. We'll go find another peer.");
 					return null;
 				} else if (mes.getMessageID() == 2) {
 					p.setPeer_interested(true);
-					System.out.println("Are... are you interested? Really??? :D");
+					System.out
+							.println("Are... are you interested? Really??? :D");
 				} else if (mes.getMessageID() == 1) {
 					//the true culprit on how to guarantee we get requests/pieces. 
 					//I have no fucking idea why, but as soon as we get an unchoked
@@ -235,7 +241,8 @@ public class TorrentFile {
 					//receive a piece message when we send a request after receiving an unchoke
 					p.setPeer_choking(false);
 					System.out.println("Unchoked!");
-					buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
+					buffer = new PeerMessage().sendMessage(
+							PeerMessage.Type.INTERESTED.getType(), 0);
 					os.write(buffer.array());
 					p.setAm_interested(true);
 				} else if (mes.getMessageID() == 0) {

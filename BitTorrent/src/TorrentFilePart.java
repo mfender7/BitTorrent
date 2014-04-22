@@ -1,6 +1,10 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+
+import com.turn.ttorrent.common.Torrent;
 
 public class TorrentFilePart {
 
@@ -22,6 +26,13 @@ public class TorrentFilePart {
 		this.offset = offset;
 		this.data = ByteBuffer.allocate(pieceLength);
 		this.complete = false;
+	}
+	
+	public void createFile(Torrent torrent) throws FileNotFoundException{
+		af = new RandomAccessFile(new File(""), "");
+		channel = af.getChannel();
+		//LET'S DO THIS
+		
 	}
 
 	public boolean isComplete() {
@@ -45,5 +56,9 @@ public class TorrentFilePart {
 		if (this.piece == piece)
 			this.data.put(data);
 
+	}
+	
+	public ByteBuffer getData(){
+		return data;
 	}
 }
