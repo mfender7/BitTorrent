@@ -249,7 +249,7 @@ public class PeerMessage {
 		ByteBuffer buffer = ByteBuffer.allocate(4 + length);
 		buffer.rewind();
 		buffer.putInt(length);
-		buffer.put((byte)messageID);
+		//buffer.put((byte)messageID);
 		if(length > 1){				
 			buffer.put(payload);
 		}
@@ -297,11 +297,12 @@ public class PeerMessage {
 	private ByteBuffer sendRequest(){
 		length = 13; //payload length 12
 		messageID = 6;
-		this.piece = piece;
+		//this.piece = piece;
 		this.payload = new byte[length];
 		ByteBuffer buf = ByteBuffer.allocate(length);
 		//buf.putInt(length);
-		//buf.put((byte)messageID);
+		buf.put((byte)messageID);
+		buf.putInt(piece);
 		buf.putInt(this.blockOffset);
 		buf.putInt(this.REQUEST_SIZE);
 		this.payload = buf.array();
