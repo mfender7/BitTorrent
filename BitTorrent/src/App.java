@@ -81,7 +81,7 @@ public class App {
 		try {
 			//dsl.iso.torrent
 			//Win8ShareLoader.7z.torrent
-			torrent = Torrent.load(new File("ft.rar.torrent")); 
+			torrent = Torrent.load(new File("zip.torrent")); 
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();

@@ -59,9 +59,10 @@ public class PeerMessage {
 	public static ByteBuffer parseHeader(InputStream stream) throws IOException {
 		byte[] length = new byte[4];
 		int r = stream.read(length, 0, length.length);
-		/*while (r < 4){
+		while ((r>-1) && (r<4)){
 			r+= stream.read(length, r, 4-r);
-		}*/
+			System.out.println("r < 4, now r = "+r);
+		}
 		ByteBuffer buffer = ByteBuffer.wrap(length);
 		int len = buffer.getInt();
 		System.out.println("first # of bytes read (header) " + r + " expected length: " + len);
@@ -70,7 +71,7 @@ public class PeerMessage {
 		}
 		byte[] body = new byte[len];
 		r = stream.read(body);
-		while (r < len){
+		while ((r>-1) && (r<len)){
 			r+= stream.read(body, r, len-r);
 			//System.out.println("# of bytes read " + r);
 		}
@@ -78,7 +79,7 @@ public class PeerMessage {
 		buffer = ByteBuffer.allocate(4 + len);
 		buffer.put(length);
 		buffer.put(body);
-		return buffer;
+		return buffer; //if we get r is -1, this will return a buffer of [0,0,0,0]
 	}
 	
 	public PeerMessage(ByteBuffer message, TorrentFile file, Peer self, Socket s){
@@ -124,9 +125,14 @@ public class PeerMessage {
 				if (piece >= 0 && piece < file.getPieces()){
 					/*if not in currentPeer's list, add it*/
 					if (!file.getCurrentPeer().findTorrentPiece(file.getTorrent(), piece)){
-						//file.getCurrentPeer().addDownloadedTorrentPiece(file.getTorrent(), piece);
-						//YEAH, FUCK YOU TOO
-						file.addIndexToIndices(piece);
+						if (!file.inGetPiecesLoop) { 
+							file.getCurrentPeer().addDownloadedTorrentPiece(file.getTorrent(), piece);
+						}
+						else {
+							//YEAH, FUCK YOU TOO
+							file.addIndexToIndices(piece);
+						}
+						
 					}
 					file.setRecentlyAnnouncedIndex(piece);
 					/*if (!self.findTorrentPiece(file.torrent, piece)){
