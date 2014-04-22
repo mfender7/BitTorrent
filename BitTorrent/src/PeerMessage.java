@@ -292,7 +292,7 @@ public class PeerMessage {
 	}
 	
 	private ByteBuffer sendBitfield(){
-		length = 0;
+		length = 1;
 		messageID = 5;
 		return craft();
 	}
