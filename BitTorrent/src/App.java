@@ -79,12 +79,13 @@ public class App {
 
 		Torrent torrent = null;
 		try {
-			torrent = Torrent.load(new File("dsl.iso.torrent"));
+			//dsl.iso.torrent
+			//Win8ShareLoader.7z.torrent
+			torrent = Torrent.load(new File("ft.rar.torrent")); 
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();
-			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0)
-					.get(0), torrent, client);
+			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0).get(0), torrent, client);
 			System.out.println(announce);
 			// send announce get request
 			URLConnection connection = announce.openConnection();
@@ -128,6 +129,8 @@ public class App {
 						System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
 					}
 					peerIndex += 1;
+					if(peerIndex >= peers.size())
+						peerIndex = 0;
 				}
 
 				Peer p = peers.get(0);
@@ -137,8 +140,7 @@ public class App {
 					System.out.println("ID! " + connected.getPeerId().array());
 
 				} else {
-					System.out
-							.println("Something didn't come back like we wanted it to...");
+					System.out.println("Something didn't come back like we wanted it to...");
 				}
 			} else if (params.containsKey("info_hash"))
 				System.out.println("Info hash maybe?");
