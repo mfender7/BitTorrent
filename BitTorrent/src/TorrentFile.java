@@ -29,6 +29,7 @@ public class TorrentFile {
 	private Peer currentPeer;
 	private List<Integer> indices;
 	private int recentlyAnnouncedIndex;
+	public boolean inGetPiecesLoop;
 
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -46,7 +47,9 @@ public class TorrentFile {
 		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
 		this.indices = new ArrayList<Integer>();
 		this.recentlyAnnouncedIndex = -1;
+		this.inGetPiecesLoop = false;
 	}
+	
 	
 	public int getRecentlyAnnouncedIndex(){
 		return this.recentlyAnnouncedIndex;
@@ -110,7 +113,9 @@ public class TorrentFile {
 		OutputStream os = socket.getOutputStream();
 		InputStream is = socket.getInputStream();
 		List<Integer> list = currentPeerPieces.get(this.torrent);
+		int HAVEcounter = 0;
 		for (int i : list) {
+			this.inGetPiecesLoop = true;
 			if (!torrentParts.containsKey(i) || (torrentParts.containsKey(i) && !torrentParts.get(i).isComplete())) {
 				// REQUEST IT
 				int offset = 0;
@@ -125,6 +130,9 @@ public class TorrentFile {
 					offset = part.getOffset();
 				}
 				while (offset < pieceLength) {
+					if (i==66){
+						System.out.println("sldkjfl");
+					}
 					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
 					os.write(buffer.array());
 					System.out.println("request sent for piece index " + i + " at offset " + offset);
@@ -141,13 +149,18 @@ public class TorrentFile {
 						int mid = buffer.get(4); //but then this will kill it if we don't have 5 bytes. but I also don't want it looping forever..
 						if (mid == 4){
 							//got a damned have, request the piece it's telling us about
-							PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket);
+							/*PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket);
 							int derp = this.getRecentlyAnnouncedIndex();
 							if (derp!=-1){
 								buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), derp, offset);
 								os.write(buffer.array());
 								System.out.println("request sent for piece index " + derp + " at offset " + offset);
+							}*/
+							HAVEcounter++;
+							if (HAVEcounter > 4){
+								break;
 							}
+							continue;
 						}
 						else if (mid == 7) {
 							PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket); //parse out the payload
@@ -160,11 +173,21 @@ public class TorrentFile {
 					}
 					//also, fuck skipping around offsets. we're brute-forcing each piece, whether we like it or not.
 				}
+				if (HAVEcounter > 4){
+					break;
+				}
 				part.setComplete(true);
 				System.out.println("I think we're finally done...");
 			}
 		}
-		//our check to see if we need to download anymore pieces
+		this.inGetPiecesLoop = false;
+		if (this.indices.size() > 0){
+			for (int i : this.indices){
+				this.getCurrentPeer().addDownloadedTorrentPiece(this.torrent, i);
+			}
+			getPiecesFromPeer(); //see if there are new pieces to add
+		}
+
 		if (weAreDone()) {
 			return 1;
 		}
@@ -191,8 +214,8 @@ public class TorrentFile {
 				if (mes.getMessageID() == 5) {
 					// Bitfield, so we need to read in the next HAVE message
 					System.out.println("Got a Bitfield message!");
-					buffer = new PeerMessage().sendMessage(PeerMessage.Type.BITFIELD.getType(), 0);
-					os.write(buffer.array());					
+					//buffer = new PeerMessage().sendMessage(PeerMessage.Type.BITFIELD.getType(), 0);
+					//os.write(buffer.array());					
 				} else if (mes.getMessageID() == 4) {
 					System.out.println("JUST HAVE");
 					p.setPeer_choking(false);
