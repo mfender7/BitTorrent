@@ -81,7 +81,7 @@ public class App {
 		try {
 			//dsl.iso.torrent
 			//Win8ShareLoader.7z.torrent
-			torrent = Torrent.load(new File("zip.torrent")); 
+			torrent = Torrent.load(new File("pdf.torrent")); 
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();
@@ -140,6 +140,9 @@ public class App {
 						System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
 					}
 					peerIndex += 1;
+					if (peerIndex>=peers.size()){
+						peerIndex = 0;
+					}
 				}
 
 				Peer p = peers.get(0);

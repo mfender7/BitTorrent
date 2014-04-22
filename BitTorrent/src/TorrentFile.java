@@ -30,6 +30,7 @@ public class TorrentFile {
 	private List<Integer> indices;
 	private int recentlyAnnouncedIndex;
 	public boolean inGetPiecesLoop;
+	public int bytesReceived;
 
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -41,16 +42,19 @@ public class TorrentFile {
 		this.fileSize = torrent.getSize();
 		this.offset = 0L;
 		this.pieces = (int) Math
-				.ceil((double) this.fileSize / this.pieceLength) + 1;
+				.ceil((double) this.fileSize / this.pieceLength);
 		this.self = client.getPeer();
 		this.peerList = new ArrayList<Peer>();
 		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
 		this.indices = new ArrayList<Integer>();
 		this.recentlyAnnouncedIndex = -1;
 		this.inGetPiecesLoop = false;
+		this.bytesReceived = 0;
 	}
 	
-	
+	public long getFileSize(){
+		return this.fileSize;
+	}
 	public int getRecentlyAnnouncedIndex(){
 		return this.recentlyAnnouncedIndex;
 	}
@@ -133,7 +137,7 @@ public class TorrentFile {
 					if (i==66){
 						System.out.println("sldkjfl");
 					}
-					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset);
+					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset, this);
 					os.write(buffer.array());
 					System.out.println("request sent for piece index " + i + " at offset " + offset);
 					buffer = PeerMessage.parseHeader(is);
@@ -156,6 +160,8 @@ public class TorrentFile {
 								os.write(buffer.array());
 								System.out.println("request sent for piece index " + derp + " at offset " + offset);
 							}*/
+							buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
+							os.write(buffer.array());
 							HAVEcounter++;
 							if (HAVEcounter > 4){
 								break;
@@ -166,6 +172,11 @@ public class TorrentFile {
 							PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket); //parse out the payload
 							part.add(pm.getPayload(), offset); //add the piece[offset] to our TorrentFilePart map
 							offset += PeerMessage.REQUEST_SIZE;
+							bytesReceived += PeerMessage.REQUEST_SIZE;
+							if (bytesReceived >= this.fileSize){
+								break;
+							}
+							System.out.println("bytes received: "+ bytesReceived);
 						}
 						else {
 							System.out.println("wtf");
@@ -188,8 +199,9 @@ public class TorrentFile {
 		if (this.indices.size() > 0){
 			for (int i : this.indices){
 				this.getCurrentPeer().addDownloadedTorrentPiece(this.torrent, i);
+				//this.indices = new ArrayList<Integer>(); //clear indices list
 			}
-			getPiecesFromPeer(); //see if there are new pieces to add
+			//getPiecesFromPeer(); //see if there are new pieces to add, eh nevermind
 		}
 
 		if (weAreDone()) {

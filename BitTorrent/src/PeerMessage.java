@@ -52,6 +52,7 @@ public class PeerMessage {
 	private int index;
 	private int blockOffset;
 	private int piece;
+	private TorrentFile file;
 	public static final int REQUEST_SIZE = 16384;
 	
 	public PeerMessage(){ }
@@ -216,10 +217,11 @@ public class PeerMessage {
 		return payload;
 	}
 	
-	public ByteBuffer sendMessage(int id, int piece, int offset){
+	public ByteBuffer sendMessage(int id, int piece, int offset, TorrentFile file){
 		if(id == 6){
 			this.blockOffset = offset;
 			this.piece = piece;
+			this.file = file;
 			
 			return sendRequest();
 		}
@@ -313,7 +315,11 @@ public class PeerMessage {
 		//buf.put((byte)messageID);
 		buf.putInt(piece);
 		buf.putInt(this.blockOffset);
-		buf.putInt(PeerMessage.REQUEST_SIZE);
+		if (REQUEST_SIZE > (file.getFileSize() - file.bytesReceived)){
+			buf.putInt((int) (file.getFileSize() % REQUEST_SIZE));
+		}
+		//buf.putInt(remaining);
+		else {buf.putInt(PeerMessage.REQUEST_SIZE);}
 		this.payload = buf.array();
 		//System.out.println("in sendRequest payload: "+Arrays.toString(payload));
 		return craft();
