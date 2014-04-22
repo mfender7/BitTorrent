@@ -4,13 +4,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
-
-import org.apache.commons.codec.binary.Hex;
-
-import com.turn.ttorrent.common.Torrent;
 
 
 public class PeerMessage {
@@ -116,8 +110,6 @@ public class PeerMessage {
 				System.out.println("THEY HAS SOMETHING");
 				ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
 				int piece = payloadBuff.getInt();
-				OutputStream os;
-				InputStream is;
 				//validate index
 				if (piece >= 0 && piece < file.getPieces()){
 					/*if not in currentPeer's list, add it*/
@@ -178,30 +170,22 @@ public class PeerMessage {
 			case PIECE:
 				System.out.println("I GOT A PIECE");
 				message.rewind();
-				byte[] payloadLength = new byte[4];
-				message.get(payloadLength);
-				int lengthInt = ByteBuffer.wrap(payloadLength).getInt();
-				byte[] messageID = new byte[1];
-				message.get(messageID);
-				byte[] pieceIndex = new byte[4];
-				message.get(pieceIndex);
-				if(index == ByteBuffer.wrap(pieceIndex).getInt()) {
-					byte[] blockOffsetFromMess = new byte[4];
-					message.get(blockOffsetFromMess);
-					if (blockOffset == ByteBuffer.wrap(blockOffsetFromMess).getInt()){
-						//int blockOffsetInt = ByteBuffer.wrap(blockOffset).getInt();
-						byte[] dataBlock = new byte[lengthInt-9];
-						message.get(dataBlock);
-						this.payload = dataBlock;
-						//create torrentfilepart?
-						//need to add this datablock to a something TODO
-					}
-				};	
+				this.length = message.getInt();
+				this.messageID = message.get();
+				this.index = message.getInt();
+				this.blockOffset = message.getInt();
+				this.payload = new byte[length-9];
+				message.get(this.payload);
+				//this.payload = dataBlock;
+				//create torrentfilepart?
+				//need to add this datablock to a something TODO
+				
 				break;
 			case CANCEL:
 				break;
 		}
 	}
+
 	
 	public int getMessageID(){
 		return messageID;
@@ -312,7 +296,7 @@ public class PeerMessage {
 		//buf.put((byte)messageID);
 		buf.putInt(piece);
 		buf.putInt(this.blockOffset);
-		buf.putInt(this.REQUEST_SIZE);
+		buf.putInt(PeerMessage.REQUEST_SIZE);
 		this.payload = buf.array();
 		//System.out.println("in sendRequest payload: "+Arrays.toString(payload));
 		return craft();
