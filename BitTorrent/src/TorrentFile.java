@@ -16,13 +16,9 @@ import com.turn.ttorrent.common.Torrent;
 public class TorrentFile {
 
 	private long fileSize;
-	private long offset;
 	private int pieces;
-	private int pieceLength;
-	private RandomAccessFile raf;
-	private FileChannel channel;
+	public int pieceLength;
 	private Torrent torrent;
-	private File torrentFile;
 	public Map<Integer, TorrentFilePart> torrentParts;
 	private List<Peer> peerList;
 	private Peer self;
@@ -30,6 +26,7 @@ public class TorrentFile {
 	private List<Integer> indices;
 	private int recentlyAnnouncedIndex;
 	public boolean inGetPiecesLoop;
+	public TorrentFileCreator creator;
 
 	public TorrentFile(Torrent torrent, Client client) throws IOException {
 		this.torrent = torrent;
@@ -39,9 +36,7 @@ public class TorrentFile {
 		// this.raf = new RandomAccessFile(new File(torrent.getName()), "rw");
 		// this.channel = raf.getChannel();
 		this.fileSize = torrent.getSize();
-		this.offset = 0L;
-		this.pieces = (int) Math
-				.ceil((double) this.fileSize / this.pieceLength) + 1;
+		this.pieces = (int) Math.ceil((double) this.fileSize / this.pieceLength) + 1;
 		this.self = client.getPeer();
 		this.peerList = new ArrayList<Peer>();
 		this.torrentParts = new HashMap<Integer, TorrentFilePart>();
@@ -176,6 +171,8 @@ public class TorrentFile {
 				if (HAVEcounter > 4){
 					break;
 				}
+				//let's add the part to the file...
+				creator.addPartToZeFile(i, part);
 				part.setComplete(true);
 				System.out.println("I think we're finally done...");
 			}
@@ -189,7 +186,7 @@ public class TorrentFile {
 			for (int i : this.indices){
 				this.getCurrentPeer().addDownloadedTorrentPiece(this.torrent, i);
 			}
-			getPiecesFromPeer(); //see if there are new pieces to add
+			//getPiecesFromPeer(); //see if there are new pieces to add
 		}
 
 		if (weAreDone()) {

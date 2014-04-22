@@ -101,6 +101,9 @@ public class App {
 				List<Peer> peers = toPeerList(params.get("peers").getBytes());
 				System.out.println("creating TorrentFile");
 				TorrentFile file = new TorrentFile(torrent, client);
+				TorrentFileCreator fc = new TorrentFileCreator(file);
+				fc.pieceLength = file.pieceLength;
+				file.creator = fc;
 				//took out the while(pieces< file.getPieces()) cause it 
 				//wasn't doing anything useful. especially since we loop through all files
 				//in getPiecesFromPeer
@@ -126,7 +129,7 @@ public class App {
 								if (i==0){System.out.println("well, shit.");}
 								else {
 									//combine the pieces
-									TorrentFileCreator fc = new TorrentFileCreator(file);
+									fc = new TorrentFileCreator(file);
 									fc.makeZeFile(file.torrentParts);
 									System.out.println("we should combine now!");
 								}
@@ -149,8 +152,7 @@ public class App {
 					System.out.println("ID! " + connected.getPeerId().array());
 
 				} else {
-					System.out
-							.println("Something didn't come back like we wanted it to...");
+					System.out.println("Something didn't come back like we wanted it to...");
 				}
 			} else if (params.containsKey("info_hash"))
 				System.out.println("Info hash maybe?");

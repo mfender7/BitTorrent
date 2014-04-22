@@ -10,11 +10,19 @@ public class TorrentFileCreator {
 	private RandomAccessFile af; // = new RandomAccessFile("", "rw");
 	private FileChannel channel;
 	private TorrentFile torrent;
+	private ByteBuffer file;
+	public int pieceLength;
 	
 	public TorrentFileCreator(TorrentFile torrent) throws FileNotFoundException{
-		af = new RandomAccessFile(new File(torrent.getTorrent().getName()), "rw");
+		file = ByteBuffer.allocate((int)torrent.getTorrent().getSize());
+		af = new RandomAccessFile(new File(torrent.getTorrent().getName() + ".part"), "rw");
 		channel = af.getChannel();
 		this.torrent = torrent;
+	}
+	
+	public void addPartToZeFile(int piece, TorrentFilePart part){
+		for(int i = 0; i < part.getData().capacity(); i++)
+			file.put((piece * pieceLength) + i, part.getData().array()[i]);
 	}
 	
 	public void makeZeFile(Map<Integer, TorrentFilePart> parts) throws IOException{
