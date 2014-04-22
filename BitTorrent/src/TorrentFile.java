@@ -162,7 +162,7 @@ public class TorrentFile {
 					System.out.println("Got a Bitfield message!");
 				} else if (mes.getMessageID() == 4) {
 					System.out.println("JUST HAVE");
-					// p.setPeer_choking(false);
+					p.setPeer_choking(false);
 					// I don't know why, but no setting it as unchoking made it look for more messages,
 					//which then results in an unchoke.
 					p.setAm_interested(true);
