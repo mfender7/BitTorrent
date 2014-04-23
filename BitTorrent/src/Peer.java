@@ -141,23 +141,5 @@ peer_interested: peer is interested in this client*/
 	public void setSocket(Socket socket){
 		this.socket = socket;
 	}
-	
-	/*public String toString() {
-		StringBuilder s = new StringBuilder("peer://")
-			.append(this.getIp()).append(":").append(this.getPort())
-			.append("/");
-
-		if (this.hasPeerId()) {
-			s.append(this.hexPeerId.substring(this.hexPeerId.length()-6));
-		} else {
-			s.append("?");
-		}
-
-		if (this.getPort() < 10000) {
-			s.append(" ");
-		}
-
-		return s.toString();
-	}*/
 
 }

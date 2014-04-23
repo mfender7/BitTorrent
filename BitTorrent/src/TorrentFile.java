@@ -36,9 +36,6 @@ public class TorrentFile {
 		this.torrent = torrent;
 		this.pieceLength = torrent.getDecodedInfo().get("piece length")
 				.getInt();
-		// torrent.
-		// this.raf = new RandomAccessFile(new File(torrent.getName()), "rw");
-		// this.channel = raf.getChannel();
 		this.fileSize = torrent.getSize();
 		this.offset = 0L;
 		this.pieces = (int) Math
@@ -134,32 +131,13 @@ public class TorrentFile {
 					offset = part.getOffset();
 				}
 				while (offset < pieceLength) {
-					if (i==66){
-						System.out.println("sldkjfl");
-					}
 					buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), i, offset, this);
 					os.write(buffer.array());
 					System.out.println("request sent for piece index " + i + " at offset " + offset);
 					buffer = PeerMessage.parseHeader(is);
 					if (buffer.capacity() > 0) { //I don't like reading negative bits....
-						/*if (buffer.getInt()==0){
-							//KEEP ALIVE
-							System.out.println("keep alive detected");
-							continue;
-						}*/
-						/*if (buffer.remaining()<5){
-							continue;
-						}*/
 						int mid = buffer.get(4); //but then this will kill it if we don't have 5 bytes. but I also don't want it looping forever..
 						if (mid == 4){
-							//got a damned have, request the piece it's telling us about
-							/*PeerMessage pm = new PeerMessage(buffer, this, this.currentPeer, socket);
-							int derp = this.getRecentlyAnnouncedIndex();
-							if (derp!=-1){
-								buffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), derp, offset);
-								os.write(buffer.array());
-								System.out.println("request sent for piece index " + derp + " at offset " + offset);
-							}*/
 							buffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
 							os.write(buffer.array());
 							HAVEcounter++;
@@ -176,25 +154,21 @@ public class TorrentFile {
 							if (bytesReceived >= this.fileSize){
 								break;
 							}
-							System.out.println("bytes received: "+ bytesReceived);
-						}
-						else {
-							System.out.println("wtf");
+							//System.out.println("bytes received: "+ bytesReceived);
 						}
 					}
-					//also, fuck skipping around offsets. we're brute-forcing each piece, whether we like it or not.
 				}
 				if (HAVEcounter > 4){
 					break;
 				}
 				part.setComplete(true);
-				System.out.println("I think we're finally done...");
+				//System.out.println("I think we're finally done...");
 			}
 		}
 
 		this.inGetPiecesLoop = false;
 
-		System.out.println(".....are we?");
+		//System.out.println(".....are we?");
 		//our check to see if we need to download anymore pieces
 		if (this.indices.size() > 0){
 			for (int i : this.indices){
@@ -222,21 +196,19 @@ public class TorrentFile {
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
 			// first let's get dat bitfield...
-			ByteBuffer buffer; // = PeerMessage.parseHeader(is);
+			ByteBuffer buffer;
 			PeerMessage mes;
 			while (true) {
 				buffer = PeerMessage.parseHeader(is);
 				mes = new PeerMessage(buffer, this, this.self, socket);
 				if (mes.getMessageID() == 5) {
 					// Bitfield, so we need to read in the next HAVE message
-					System.out.println("Got a Bitfield message!");
+					//System.out.println("Got a Bitfield message!");
 					//buffer = new PeerMessage().sendMessage(PeerMessage.Type.BITFIELD.getType(), 0);
 					//os.write(buffer.array());
 				} else if (mes.getMessageID() == 4) {
-					System.out.println("JUST HAVE");
+					//System.out.println("JUST HAVE");
 					p.setPeer_choking(false);
-					// I don't know why, but no setting it as unchoking made it look for more messages,
-					//which then results in an unchoke.
 					p.setAm_interested(true);
 				} else if (mes.getMessageID() == 3) {
 					System.out
@@ -244,13 +216,8 @@ public class TorrentFile {
 					return null;
 				} else if (mes.getMessageID() == 2) {
 					p.setPeer_interested(true);
-					System.out
-							.println("Are... are you interested? Really??? :D");
+					//System.out.println("Are... are you interested? Really??? :D");
 				} else if (mes.getMessageID() == 1) {
-					//the true culprit on how to guarantee we get requests/pieces. 
-					//I have no fucking idea why, but as soon as we get an unchoked
-					//the next message we get later will be a request. or, we'll actually
-					//receive a piece message when we send a request after receiving an unchoke
 					p.setPeer_choking(false);
 					System.out.println("Unchoked!");
 					buffer = new PeerMessage().sendMessage(
@@ -265,8 +232,8 @@ public class TorrentFile {
 					return p;
 			}
 		} catch (Exception ex) {
-			System.out.println("Shit happened.");
-			ex.printStackTrace();
+			//System.out.println("Shit happened.");
+			//ex.printStackTrace();
 		}
 		return null;
 	}

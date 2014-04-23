@@ -118,14 +118,13 @@ public class App {
 								peerIndex++;
 								continue;
 							} else {
-								System.out.println("Go go go");
-								//COMBINE SHIT
+								//System.out.println("Go go go");
 								if(file.weAreDone()){
 									
 								}
 								int i = file.getPiecesFromPeer();
-								if (i==0){System.out.println("well, shit.");}
-								else {
+
+								if (i != 0) {
 									//combine the pieces
 									TorrentFileCreator fc = new TorrentFileCreator(file);
 									fc.makeZeFile(file.torrentParts);
@@ -136,11 +135,11 @@ public class App {
 								
 							}
 						} else
-							System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", peerIndex + 1, peers.size()));
+							System.out.println(String.format("Peer[%d/%d] didn't work.", peerIndex + 1, peers.size()));
 					} catch (Exception ex) {
-						ex.printStackTrace();
+						//ex.printStackTrace();
 						System.out.println("Peer index " + peerIndex);
-						System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
+						System.out.println("Try another peer for the piece...");
 					}
 					peerIndex += 1;
 					if (peerIndex>=peers.size()){
@@ -148,10 +147,12 @@ public class App {
 					}
 				}
 				
-			} else if (params.containsKey("info_hash"))
-				System.out.println("Info hash maybe?");
-			else
-				System.out.println("Shit");
+			} else if (params.containsKey("info_hash")) {
+				//System.out.println("Info hash maybe?"); 
+				}
+			else {
+				//System.out.println("Shit");
+			}
 
 			// client.run();
 			baos.close();
