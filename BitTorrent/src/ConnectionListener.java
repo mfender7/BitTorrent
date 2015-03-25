@@ -1,4 +1,3 @@
-
 import com.turn.ttorrent.common.Torrent;
 
 import java.io.*;
@@ -48,7 +47,7 @@ public class ConnectionListener implements Runnable {
 			}
 		}
 
-		System.out.println("Listening for incoming connections on something.");
+		//System.out.println("Listening for incoming connections on something.");
 		
 	}
 
@@ -76,23 +75,6 @@ public class ConnectionListener implements Runnable {
              //logger.warn("{}", se);
              this.stop();
 		 }
-/*
-		 while (!this.stop) {
-             try {
-                 this.accept();
-             } catch (SocketTimeoutException ste) {
-                     // Ignore and go back to sleep
-             } catch (IOException ioe) {
-                     //logger.warn("{}", ioe);
-                     this.stop();
-             }
-
-             try {
-                     Thread.sleep(750);
-             } catch (InterruptedException ie) {
-                     // Ignore
-             }
-		 }*/
 
 		 try {
              this.ssocket.close();
@@ -110,7 +92,7 @@ public class ConnectionListener implements Runnable {
                 this.sendHandshake(socket);
                 //this.fireNewPeerConnection(socket, hs.getPeerId());
         } catch (ParseException pe) {
-                System.out.println(pe.getMessage());
+                //System.out.println(pe.getMessage());
                 try { socket.close(); } catch (IOException e) { }
         } catch (IOException ioe) {
                 System.out.println(ioe.getMessage());
@@ -125,7 +107,7 @@ public class ConnectionListener implements Runnable {
 	}
 
 	
-	public void stop() { //copied
+	public void stop() {
 		this.stop = true;
 
         if (this.thread != null && this.thread.isAlive()) {
@@ -147,7 +129,7 @@ public class ConnectionListener implements Runnable {
 	private Handshake getHandshake(Socket socket, byte[] peerId)
 			throws IOException, ParseException {
 		// Read the handshake from the wire
-		System.out.println("in getHandshake");
+		//System.out.println("in getHandshake");
 		InputStream input = socket.getInputStream();
 		int pstrlen = input.read();
         byte[] data = new byte[Handshake.LENGTH];
@@ -158,9 +140,6 @@ public class ConnectionListener implements Runnable {
         Handshake hs = Handshake.parse(ByteBuffer.wrap(data));
         if (!Arrays.equals(hs.getInfoHash(), this.torrent.getInfoHash())) {
             System.out.println("Nuuuu");
-        	/*throw new ParseException("Handshake for unknow torrent " +
-                                Torrent.byteArrayToHexString(hs.getInfoHash()) +
-                                " from " + this.socketRepr(socket) + ".", pstrlen + 9);*/
         }
 
         if (peerId != null && !Arrays.equals(hs.getPeerId(), peerId)) {
@@ -175,7 +154,7 @@ public class ConnectionListener implements Runnable {
 		}
 	
 	private void sendHandshake(Socket socket) throws IOException {
-		System.out.println("in sendHandshake");
+		//System.out.println("in sendHandshake");
 		Handshake hs = Handshake.make(this.torrent.getInfoHash(), 
 				this.id.getBytes(Torrent.BYTE_ENCODING));
 		OutputStream os = socket.getOutputStream();
@@ -191,8 +170,7 @@ public class ConnectionListener implements Runnable {
         } catch (IOException ioe) {
                 // Could not connect to peer, abort
         	System.out.println("could not connect to peer");
-        	try { socket.close(); } catch (IOException e) { }
-                //logger.warn("Could not connect to {}: {}", peer, ioe.getMessage());   
+        	try { socket.close(); } catch (IOException e) { } 
         	return null;
         }
 
@@ -200,17 +178,13 @@ public class ConnectionListener implements Runnable {
                 sendHandshake(socket);
                 Handshake hs = getHandshake(socket,
                                 (peer.hasPeerId() ? peer.getPeerId().array() : null));
-                //this.fireNewPeerConnection(socket, hs.getPeerId());
                 Peer ret = new Peer(address.getHostString(), address.getPort(), ByteBuffer.wrap(hs.getPeerId()));
                 ret.setSocket(socket);
                 return ret;
         } catch (ParseException pe) {
-                //logger.debug("Invalid handshake from {}: {}",
-                        //this.socketRepr(socket), pe.getMessage());
+
                 try { socket.close(); } catch (IOException e) { }
         } catch (IOException ioe) {
-                //logger.debug("An error occurred while reading an incoming " +
-                               // "handshake: {}", ioe.getMessage());
                 try {
                         if (!socket.isClosed()) {
                                 socket.close();

@@ -79,12 +79,13 @@ public class App {
 
 		Torrent torrent = null;
 		try {
-			torrent = Torrent.load(new File("dsl.iso.torrent"));
+			//dsl.iso.torrent
+			//Win8ShareLoader.7z.torrent
+			torrent = Torrent.load(new File("pdf.torrent")); 
 			client = new Client(InetAddress.getLocalHost(), torrent);
 			System.out.println(client.getID());
 			client.run();
-			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0)
-					.get(0), torrent, client);
+			URL announce = buildAnnounceURL(torrent.getAnnounceList().get(0).get(0), torrent, client);
 			System.out.println(announce);
 			// send announce get request
 			URLConnection connection = announce.openConnection();
@@ -117,11 +118,13 @@ public class App {
 								peerIndex++;
 								continue;
 							} else {
-								System.out.println("Go go go");
-								// REQUEST SHIT
+								//System.out.println("Go go go");
+								if(file.weAreDone()){
+									
+								}
 								int i = file.getPiecesFromPeer();
-								if (i==0){System.out.println("well, shit.");}
-								else {
+
+								if (i != 0) {
 									//combine the pieces
 									TorrentFileCreator fc = new TorrentFileCreator(file);
 									fc.makeZeFile(file.torrentParts);
@@ -132,19 +135,24 @@ public class App {
 								
 							}
 						} else
-							System.out.println(String.format("Peer[%d/%d] didn't work. *sigh*", peerIndex + 1, peers.size()));
+							System.out.println(String.format("Peer[%d/%d] didn't work.", peerIndex + 1, peers.size()));
 					} catch (Exception ex) {
-						ex.printStackTrace();
+						//ex.printStackTrace();
 						System.out.println("Peer index " + peerIndex);
-						System.out.println("Nooooo. Damn it. Now to try another peer for the piece...");
+						System.out.println("Try another peer for the piece...");
 					}
 					peerIndex += 1;
+					if (peerIndex>=peers.size()){
+						peerIndex = 0;
+					}
 				}
 				
-			} else if (params.containsKey("info_hash"))
-				System.out.println("Info hash maybe?");
-			else
-				System.out.println("Shit");
+			} else if (params.containsKey("info_hash")) {
+				//System.out.println("Info hash maybe?"); 
+				}
+			else {
+				//System.out.println("Shit");
+			}
 
 			// client.run();
 			baos.close();

@@ -37,24 +37,6 @@ public class Client {
 				.getAddress().getHostAddress(),
 			(short)this.service.getAddress().getPort(),
 			ByteBuffer.wrap(id.getBytes(Torrent.BYTE_ENCODING)));
-
-		// Initialize the announce request thread, and register ourselves to it
-		// as well.
-		/*this.announce = new Announce(this.torrent, this.self);
-		this.announce.register(this);
-
-		logger.info("BitTorrent client [{}] for {} started and " +
-			"listening at {}:{}...",
-			new Object[] {
-				this.self.getShortHexPeerId(),
-				this.torrent.getName(),
-				this.self.getIp(),
-				this.self.getPort()
-			});
-
-		this.peers = new ConcurrentHashMap<String, SharingPeer>();
-		this.connected = new ConcurrentHashMap<String, SharingPeer>();
-		this.random = new Random(System.currentTimeMillis());*/
 	}
 	
 	public void run(){

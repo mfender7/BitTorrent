@@ -52,6 +52,7 @@ public class PeerMessage {
 	private int index;
 	private int blockOffset;
 	private int piece;
+	private TorrentFile file;
 	public static final int REQUEST_SIZE = 16384;
 	
 	public PeerMessage(){ }
@@ -61,11 +62,11 @@ public class PeerMessage {
 		int r = stream.read(length, 0, length.length);
 		while ((r>-1) && (r<4)){
 			r+= stream.read(length, r, 4-r);
-			System.out.println("r < 4, now r = "+r);
+			//System.out.println("r < 4, now r = "+r);
 		}
 		ByteBuffer buffer = ByteBuffer.wrap(length);
 		int len = buffer.getInt();
-		System.out.println("first # of bytes read (header) " + r + " expected length: " + len);
+		//System.out.println("first # of bytes read (header) " + r + " expected length: " + len);
 		if (r == 0) {
 			return buffer;
 		}
@@ -75,7 +76,7 @@ public class PeerMessage {
 			r+= stream.read(body, r, len-r);
 			//System.out.println("# of bytes read " + r);
 		}
-		System.out.println("# of bytes read " + r);
+		//System.out.println("# of bytes read " + r);
 		buffer = ByteBuffer.allocate(4 + len);
 		buffer.put(length);
 		buffer.put(body);
@@ -100,7 +101,7 @@ public class PeerMessage {
 	//parse the messages that actually have a payload
 	private void parse(ByteBuffer message, TorrentFile file, Peer self, Socket s){
 		Type type = Type.get((byte) messageID);
-		System.out.println(type);
+		//System.out.println(type);
 		ByteBuffer messageBuffer;
 		switch(type){
 			case KEEP_ALIVE:
@@ -118,7 +119,7 @@ public class PeerMessage {
 				self.setPeer_interested(false);
 				break;
 			case HAVE:
-				System.out.println("THEY HAS SOMETHING");
+				//System.out.println("THEY HAS SOMETHING");
 				ByteBuffer payloadBuff = ByteBuffer.wrap(payload);
 				int piece = payloadBuff.getInt();
 				//validate index
@@ -135,35 +136,7 @@ public class PeerMessage {
 						
 					}
 					file.setRecentlyAnnouncedIndex(piece);
-					/*if (!self.findTorrentPiece(file.torrent, piece)){
-						//send interested message
-						messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.INTERESTED.getType(), 0);
-						//os.write(buffer.array(), 0, buffer.array().length);
-						
-						try {
-							os = s.getOutputStream();
-							os.write(messageBuffer.array());
-							System.out.println("Interest message sent");
-							self.setAm_interested(true);
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-						
-						//confirm peer isn't choked
-						
-						if (!self.getPeer_choking()){ //not being choked by peer, request piece
-							//send a request message
-							messageBuffer.clear();
-							messageBuffer = new PeerMessage().sendMessage(PeerMessage.Type.REQUEST.getType(), piece);
-							try {
-								os = s.getOutputStream();
-								os.write(messageBuffer.array());
-								System.out.println("Request message sent");
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-					}*/
+					
 				}
 				break;
 			case BITFIELD:
@@ -180,7 +153,7 @@ public class PeerMessage {
 					}
 				}
 				file.getCurrentPeer().addDownloadedTorrentPiecesList(file.getTorrent(), indices);
-				System.out.println("Bitfield bullshit");
+				
 				break;
 			case REQUEST:
 				break;
@@ -193,10 +166,6 @@ public class PeerMessage {
 				this.blockOffset = message.getInt();
 				this.payload = new byte[length-9];
 				message.get(this.payload);
-				//this.payload = dataBlock;
-				//create torrentfilepart?
-				//need to add this datablock to a something TODO
-				
 				break;
 			case CANCEL:
 				break;
@@ -216,10 +185,11 @@ public class PeerMessage {
 		return payload;
 	}
 	
-	public ByteBuffer sendMessage(int id, int piece, int offset){
+	public ByteBuffer sendMessage(int id, int piece, int offset, TorrentFile file){
 		if(id == 6){
 			this.blockOffset = offset;
 			this.piece = piece;
+			this.file = file;
 			
 			return sendRequest();
 		}
@@ -306,14 +276,15 @@ public class PeerMessage {
 	private ByteBuffer sendRequest(){
 		length = 13; //payload length 12
 		messageID = 6;
-		//this.piece = piece;
 		this.payload = new byte[length-1];
 		ByteBuffer buf = ByteBuffer.allocate(length-1);
-		//buf.putInt(length);
-		//buf.put((byte)messageID);
 		buf.putInt(piece);
 		buf.putInt(this.blockOffset);
-		buf.putInt(PeerMessage.REQUEST_SIZE);
+		if (REQUEST_SIZE > (file.getFileSize() - file.bytesReceived)){
+			buf.putInt((int) (file.getFileSize() % REQUEST_SIZE));
+		}
+		//buf.putInt(remaining);
+		else {buf.putInt(PeerMessage.REQUEST_SIZE);}
 		this.payload = buf.array();
 		//System.out.println("in sendRequest payload: "+Arrays.toString(payload));
 		return craft();
